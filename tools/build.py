@@ -14,7 +14,7 @@ pages = []
 for fn in sorted(glob.glob(os.path.join(ROOT, 'data', 'd*.json'))):
     pages += json.load(open(fn))
 for p in pages:
-    m = re.match(r'SP｜No\.(\d+) (.+?)（(.+?)）$', p['name'])
+    m = re.match(r'SP｜No\.(\d+) (.+)（([^（）]+)）$', p['name'])
     p['no'], p['title'], url = m.group(1), m.group(2), m.group(3)
     p['url'] = url.replace('{ID}', 'sample')
 URL = {p['no']: p['url'] for p in pages}

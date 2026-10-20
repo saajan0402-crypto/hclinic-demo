@@ -28,6 +28,10 @@
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, {passive: true});
   onScroll();
+  // フッターのサイトマップ
+  $$('.fsh').forEach(b => b.addEventListener('click', () => { const g = b.parentElement, o = !g.classList.contains('open');
+    g.classList.toggle('open', o); b.setAttribute('aria-expanded', o);
+    $$('.fsl', g).forEach((a, i) => a.style.transitionDelay = o && !reduce ? (40 + i * 22) + 'ms' : '0ms'); lockUntil = Date.now() + 500; }));
   // アコーディオン（タップで開閉）
   $$('.hs-acc').forEach(b => b.addEventListener('click', () => {
     const p = document.getElementById(b.dataset.acc); if (!p) return;
@@ -53,7 +57,7 @@
   // 予約ボタン（デモ）
   const toast = $('.toast'); let tm;
   const say = m => { toast.textContent = m; toast.classList.add('on'); clearTimeout(tm); tm = setTimeout(() => toast.classList.remove('on'), 2200); };
-  $$('[data-act]').forEach(b => b.addEventListener('click', () => say(({line: 'デモのため、LINE予約には移動しません', web: 'デモのため、Web予約には移動しません', ai: 'AIチャットはデモでは起動しません'})[b.dataset.act] || 'デモ表示です')));
+  $$('[data-act]').forEach(b => b.addEventListener('click', () => say(({line: 'デモのため、LINE予約には移動しません', web: 'デモのため、Web予約には移動しません', ai: 'AIチャットはデモでは起動しません', sns: 'デモのため、SNSには移動しません'})[b.dataset.act] || 'デモ表示です')));
   // メニュー
   const menu = $('.menu');
   const openMenu = () => { menu.classList.add('open'); menu.setAttribute('aria-hidden', 'false'); document.body.classList.add('menu-open');

@@ -79,3 +79,18 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .pmx.on::after{transform:translate(-50%,-50%) rotate(0deg)}
 .hs-bc{overflow:visible}.hs-bc::after{content:"";position:absolute;left:4px;right:4px;top:calc(50% + var(--u)*9);height:1px;background:#8a7466;opacity:.5}
 .hs-bc:active{background:rgba(198,90,30,.10)}
+/* フッターのサイトマップ（カテゴリごとに開閉） */
+.fsm{padding:calc(var(--u)*6) calc(var(--u)*20) calc(var(--u)*14);color:#fff}
+.fsg{border-bottom:1px solid rgba(255,255,255,.14)}
+.fsh{display:flex;align-items:center;justify-content:space-between;width:100%;padding:calc(var(--u)*14) 0;border:0;background:none;color:#fff;font:inherit;font-weight:700;font-size:calc(var(--u)*14.5);letter-spacing:.04em;cursor:pointer;text-align:left}
+.fsh i{position:relative;width:calc(var(--u)*16);height:calc(var(--u)*16);flex:none;transition:transform .4s var(--ease)}
+.fsh i::before,.fsh i::after{content:"";position:absolute;left:50%;top:50%;width:100%;height:2px;background:#fff;border-radius:1px;transform:translate(-50%,-50%)}
+.fsh i::after{transform:translate(-50%,-50%) rotate(90deg);transition:transform .4s var(--ease)}
+.fsg.open .fsh i{transform:rotate(180deg)}.fsg.open .fsh i::after{transform:translate(-50%,-50%) rotate(0)}
+.fsp{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease)}
+.fsg.open .fsp{grid-template-rows:1fr}
+.fsp ul{list-style:none;margin:0;padding:0 0 calc(var(--u)*12);display:grid;grid-template-columns:1fr 1fr;gap:0 calc(var(--u)*12)}
+.fsl{display:block;padding:calc(var(--u)*8) 0 calc(var(--u)*8) calc(var(--u)*12);position:relative;color:#EADFD7;text-decoration:none;font-size:calc(var(--u)*13);line-height:1.45;opacity:0;transform:translateY(-4px);transition:opacity .3s var(--ease),transform .35s var(--ease),color .2s}
+.fsl::before{content:"";position:absolute;left:0;top:calc(var(--u)*15);width:5px;height:5px;border-top:1.5px solid #E39B6E;border-right:1.5px solid #E39B6E;transform:rotate(45deg)}
+.fsl:active{color:#fff}.fsl.cur{color:#fff;font-weight:700}
+.fsg.open .fsl{opacity:1;transform:none}

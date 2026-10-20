@@ -86,6 +86,16 @@ def menu_html(base):
 FONT = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 CRUMB = {'TOP': '01', '性病検査': '04', '自費診療': '15', '当院について': '23', 'お知らせ': '26'}
 
+LEAD = json.load(open(os.path.join(ROOT, 'data2', 'lead.json')))
+BOLD = ImageFont.truetype(os.path.join(ROOT, 'fonts', 'NotoSansJP.ttf'), 30); BOLD.set_variation_by_axes([700])
+
+def footer_html(base, cur, bg):
+    gs = []
+    for g, nos in MENU:
+        li = ''.join(f'<li><a class="fsl{" cur" if n == cur else ""}" href="{base}{URL[n].lstrip("/")}"{" aria-current=page" if n == cur else ""}>{esc(TITLE[n])}</a></li>' for n in nos)
+        gs.append(f'<div class="fsg"><button class="fsh" aria-expanded="false">{g}<i></i></button><div class="fsp"><div class="ap-in"><ul>{li}</ul></div></div></div>')
+    return f'<div class="fsm" style="background:{bg}">{"".join(gs)}</div>'
+
 def render_blocks(bl, base):
     out = []
     for b in bl:
@@ -114,6 +124,13 @@ def build():
         no = p['no']; src = os.path.join(SRC, f'{no}.png')
         if not os.path.exists(src): report.append(f'{no}: 画像なし'); continue
         im = Image.open(src).convert('RGB')
+        if no in LEAD:  # 「リード文の続きを読む」→「もっと詳しく読む」
+            from PIL import ImageDraw
+            x, y, w, h = LEAD[no]
+            bg = im.getpixel((round(x * 2 - 6), round((y + h / 2) * 2)))
+            dr = ImageDraw.Draw(im)
+            dr.rectangle(tuple(round(v) for v in (x * 2 - 4, y * 2 - 2, (x + w) * 2 + 4, (y + h) * 2 + 2)), fill=bg)
+            dr.text((x * 2, (y + h / 2) * 2 - 3), 'もっと詳しく読む', font=BOLD, fill=(198, 90, 30), anchor='lm')
         sc = im.width / W
         ks, pts = cuts(p)
         hdr = next((k for k in ks if k[0].startswith('ヘッダー')), None)
@@ -172,6 +189,10 @@ def build():
                      f'<div class="ap-g"><div class="ap-in"><div class="ap-b">{content}</div></div></div></div></div>')
             ops.append({'cut': cut, 'res': res, 'panel': panel, 'id': rid, 'open': op, 'row': row, 'pm': pm, 'kind': kind, 'key': key,
                         'pmc': px(pm[0] + 3, pm[1] + pm[3] / 2), 'pmg': px(pm[0] + pm[2] / 2, pm[1] + pm[3] / 2)})
+        ft = next((k for k in ks if k[0].startswith('フッター')), None)
+        if ft:
+            fy = ft[1]
+            ops.append({'cut': fy + 272, 'res': fy + 650, 'panel': footer_html(base, no, px(8, fy + 300)), 'row': None})
         ops.sort(key=lambda o: o['cut'])
         for sec in slices:
             t = sec['top']; ch = []
@@ -189,6 +210,7 @@ def build():
             return None
         lost = 0
         for o in ops:
+            if not o['row']: continue
             row, pm = o['row'], o['pm']
             s = find(row[1] + 3)
             if not s: continue
@@ -238,6 +260,12 @@ def build():
             ts = find(tgt + 1)
             if ts: ts['anc'].append((aid, tgt))
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
+        if ft:
+            fy = ft[1]
+            for args in ((20, fy + 219, 112, 22, 'tel', 'href="tel:0362056944"', '電話'), (20, fy + 657, 44, 40, 'sns', 'data-act="sns"', 'X'), (74, fy + 657, 105, 40, 'sns', 'data-act="sns"', 'Instagram')):
+                x, y, w, h, k, attr, lab = args
+                s_ = find(y + h / 2)
+                if s_: s_['hot'].append(hot(x, y, w, h, s_['top'], s_['h'], k, attr, lab))
         # 固定バー（全ページ共通）
         fixed_rel = [f'<button class="hs hs-line" data-act="line" style="left:2.1%;top:14.5%;width:30.8%;height:71%;border-radius:12px" aria-label="LINE予約"></button>',
                      f'<button class="hs hs-web" data-act="web" style="left:34.5%;top:14.5%;width:30.8%;height:71%;border-radius:12px" aria-label="Web予約"></button>',

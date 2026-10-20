@@ -10,16 +10,32 @@
   const hdr = $('.hdr'), fbar = $('.fbar');
   const tt = document.createElement('button'); tt.className = 'totop'; tt.setAttribute('aria-label', 'ページの先頭へ'); tt.textContent = '↑'; document.body.appendChild(tt);
   tt.addEventListener('click', () => window.scrollTo({top: 0, behavior: reduce ? 'auto' : 'smooth'}));
-  let lastY = 0, ticking = false;
-  const onScroll = () => { const y = window.scrollY;
+  // ヘッダー：下へスクロール中は隠し、上へスクロールしたら出す（小さな揺れでは切り替えない）
+  let lastY = window.scrollY, travel = 0, ticking = false, lockUntil = 0;
+  const setHide = v => hdr.classList.toggle('hide', v);
+  const onScroll = () => {
+    const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+    const y = Math.min(Math.max(window.scrollY, 0), max);
+    const d = y - lastY; lastY = y; ticking = false;
     hdr.classList.toggle('scrolled', y > 8);
-    hdr.classList.toggle('hide', y > 420 && y > lastY + 4 && !document.body.classList.contains('menu-open'));
-    if (y < lastY - 4) hdr.classList.remove('hide');
     fbar.classList.toggle('on', y > 160);
     tt.classList.toggle('on', y > 900);
-    lastY = y; ticking = false; };
+    if (document.body.classList.contains('menu-open') || y < hdr.offsetHeight + 24) { setHide(false); travel = 0; return; }
+    if (Date.now() < lockUntil || d === 0) return;
+    if ((d > 0) !== (travel > 0)) travel = 0;
+    travel += d;
+    if (travel > 14) setHide(true); else if (travel < -14) setHide(false);
+  };
   window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, {passive: true});
   onScroll();
+  // アコーディオン（タップで開閉）
+  $$('.hs-acc').forEach(b => b.addEventListener('click', () => {
+    const p = document.getElementById(b.dataset.acc); if (!p) return;
+    const open = !p.classList.contains('open');
+    p.classList.toggle('open', open); b.setAttribute('aria-expanded', open);
+    const m = $(`[data-pm="${b.dataset.acc}"]`); if (m) m.classList.toggle('on', open);
+    lockUntil = Date.now() + 500;
+  }));
   // タップの波紋
   document.addEventListener('pointerdown', e => { const h = e.target.closest('.hs'); if (!h) return;
     const r = h.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2, s = document.createElement('span');
@@ -29,8 +45,9 @@
   document.addEventListener('click', e => { const a = e.target.closest('a[href]'); if (!a) return;
     const href = a.getAttribute('href');
     if (a.hasAttribute('data-anchor')) { e.preventDefault(); const t = document.getElementById(href.slice(1)); if (!t) return;
-      const top = t.getBoundingClientRect().top + window.scrollY - hdr.offsetHeight - 8; hdr.classList.remove('hide');
-      window.scrollTo({top, behavior: reduce ? 'auto' : 'smooth'}); return; }
+      const ty = t.getBoundingClientRect().top + window.scrollY, down = ty > window.scrollY;
+      setHide(down); lockUntil = Date.now() + 1200;
+      window.scrollTo({top: ty - (down ? 0 : hdr.offsetHeight) - 8, behavior: reduce ? 'auto' : 'smooth'}); return; }
     if (href.startsWith('tel:') || a.target === '_blank' || e.metaKey || e.ctrlKey) return;
     e.preventDefault(); closeMenu(); document.body.classList.add('leaving'); setTimeout(() => { location.href = a.href; }, reduce ? 0 : 180); });
   // 予約ボタン（デモ）

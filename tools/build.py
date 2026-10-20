@@ -1,6 +1,7 @@
 """Figmaの書き出し画像（img_src/NN.png：幅750px＝2倍）＋抽出データ（data/*.json）からデモサイトを生成する"""
-import json, os, re, glob, hashlib, shutil, html
-from PIL import Image
+import json, os, re, glob, hashlib, shutil, html, io, base64
+from PIL import Image, ImageFont
+import accdata
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, 'site')
@@ -40,12 +41,19 @@ def page_html(p, slices, fixed_rel):
     depth = p['url'].strip('/').count('/') + (1 if p['url'].strip('/') else 0)
     base = '../' * depth if depth else './'
     secs = []
-    for i, s in enumerate(slices):
-        hs = ''.join(s['hot'])
-        anc = ''.join(f'<span class="anc" id="{a}" style="top:{(ay - s["top"]) / s["h"] * 100:.3f}%"></span>' for a, ay in s['anc'])
-        cls = 'sl' + (' fv' if i == 0 else ' rv')
-        load = 'eager' if i < 2 else 'lazy'
-        secs.append(f'<section class="{cls}" style="aspect-ratio:{W}/{s["h"]}"><img src="{base}assets/p/{no}/{i:02d}.webp" alt="" width="{W * S}" height="{s["h"] * S}" loading="{load}" decoding="async">{hs}{anc}</section>')
+    n = 0
+    for si, sec in enumerate(slices):
+        parts = []
+        for c in sec['chunks']:
+            if c.get('panel'):
+                parts.append(c['panel']); continue
+            hs = ''.join(c['hot'])
+            anc = ''.join(f'<span class="anc" id="{a}" style="top:{(ay - c["top"]) / c["h"] * 100:.3f}%"></span>' for a, ay in c['anc'])
+            load = 'eager' if n < 3 else 'lazy'
+            parts.append(f'<div class="ch" style="aspect-ratio:{W}/{c["h"]}"><img src="{base}assets/p/{no}/{n:02d}.webp" alt="" width="{W * S}" height="{round(c["h"] * S)}" loading="{load}" decoding="async">{hs}{anc}</div>')
+            n += 1
+        cls = 'sl' + (' fv' if si == 0 else ' rv')
+        secs.append(f'<section class="{cls}">{"".join(parts)}</section>')
     fhs = ''.join(fixed_rel)
     return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>{esc(TITLE[no])}｜エイチクリニック新宿（デモ）</title>
@@ -73,6 +81,25 @@ def menu_html(base):
     out = [f'<a class="mi mi-top" href="{base}">TOP</a>']
     for g, nos in MENU:
         out.append(f'<p class="mg">{g}</p><div class="mgrid">' + ''.join(f'<a class="mi" href="{base}{URL[n].lstrip("/")}">{esc(TITLE[n])}</a>' for n in nos) + '</div>')
+    return ''.join(out)
+
+FONT = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+CRUMB = {'TOP': '01', '性病検査': '04', '自費診療': '15', '当院について': '23', 'お知らせ': '26'}
+
+def render_blocks(bl, base):
+    out = []
+    for b in bl:
+        k = b[0]
+        if k == 'p': out.append(f'<p>{esc(accdata.clean(b[1]))}</p>')
+        elif k == 'a': out.append(f'<p class="ap-ans"><b>A.</b>{esc(accdata.clean(b[1]))}</p>')
+        elif k == 'cap': out.append(f'<p class="ap-cap">{esc(accdata.clean(b[1]))}</p>')
+        elif k == 'table':
+            rows = b[1]
+            th = ''.join(f'<th>{esc(accdata.clean(c))}</th>' for c in rows[0])
+            td = ''.join('<tr>' + ''.join(f'<td>{esc(accdata.clean(c))}</td>' for c in r) + '</tr>' for r in rows[1:])
+            out.append(f'<div class="ap-tw"><table><thead><tr>{th}</tr></thead><tbody>{td}</tbody></table></div>')
+        elif k == 'more' and len(b) > 2 and b[2] in URL:
+            out.append(f'<a class="ap-more" href="{base}{URL[b[2]].lstrip("/")}">{esc(accdata.clean(b[1]))}<span>→</span></a>')
     return ''.join(out)
 
 def link_attr(no, base): return f'href="{base}{URL[no].lstrip("/")}"' if no in URL else ''
@@ -104,17 +131,86 @@ def build():
         if no == '01':
             im.crop((0, 0, im.width, round(67 * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
             if fx: im.crop((0, round(fx[1] * sc), im.width, round((fx[1] + fx[2]) * sc))).save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=88)
-        # スライス
-        bounds = [b for b in pts]
+        # スライス（セクション単位）→ アコーディオン位置でさらに分割
+        px = lambda x, y: '#%02x%02x%02x' % im.getpixel((min(im.width - 1, round(x * sc)), min(im.height - 1, round(y * sc))))
+        def dark(x0, x1, y):
+            c = min((im.getpixel((xx, round(y * sc))) for xx in range(round(x0 * sc), round(x1 * sc) + 1)), key=sum)
+            return '#%02x%02x%02x' % c
+        def strip(top, x0, x1):
+            best = None
+            for yy in range(top - 2, top - 12, -1):
+                ln = im.crop((0, round(yy * sc), im.width, round(yy * sc) + 1))
+                inner = ln.crop((round(x0 * sc), 0, round(x1 * sc), 1)).convert('L')
+                v = max(inner.getdata()) - min(inner.getdata())
+                if best is None or v < best[0]: best = (v, ln)
+            buf = io.BytesIO(); best[1].save(buf, 'PNG', optimize=True)
+            return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
         slices = []
-        for a, b in zip(bounds, bounds[1:]):
+        for a, b in zip(pts, pts[1:]):
             if hdr and a == hdr[1]: continue
             if fx and a == fx[1]: continue
-            slices.append({'top': a, 'h': b - a, 'hot': [], 'anc': []})
+            slices.append({'top': a, 'bot': b})
+        accs = accdata.match(no) if no in accdata.ACC else []
+        bodybg = next((px(a[6][0] + 4, a[6][1] + 30) for a, c, _ in accs if a[0] == 'i' and a[1] and a[6]), '#fffaf5')
+        ops = []
+        for k, (a, c, _) in enumerate(accs):
+            kind, op, key, row, pm, item, body = a
+            rid = f'ap{k}'
+            rmid = row[1] + row[3] / 2
+            if kind == 'i':
+                cut, res = row[1] + row[3] - 13, item[1] + item[3]
+                st = f'margin-left:{item[0] / W * 100:.3f}%;width:{item[2] / W * 100:.3f}%;--bg:{px(item[0] + 6, rmid)};--bd:{dark(item[0] - 1, item[0] + 2, rmid)};--bb:{bodybg}'
+                inner = '<div class="ap-pad"></div>'
+                sec_bg = strip(item[1], item[0], item[0] + item[2])
+            else:
+                cut = row[1] + row[3] - 3; res = item[1] + item[3] - 3
+                st = f'margin-left:{row[0] / W * 100:.3f}%;width:{row[2] / W * 100:.3f}%;--bg:{px(row[0] + 2, rmid)}'
+                inner = ''
+                sec_bg = strip(row[1], row[0], row[0] + row[2])
+            content = render_blocks(c['body'], base) if c else ''
+            panel = (f'<div class="apw" style="background:url({sec_bg}) 0 0/100% 100% no-repeat"><div class="ap ap-{kind}{" open" if op else ""}" id="{rid}" style="{st}">{inner}'
+                     f'<div class="ap-g"><div class="ap-in"><div class="ap-b">{content}</div></div></div></div></div>')
+            ops.append({'cut': cut, 'res': res, 'panel': panel, 'id': rid, 'open': op, 'row': row, 'pm': pm, 'kind': kind, 'key': key,
+                        'pmc': px(pm[0] + 3, pm[1] + pm[3] / 2), 'pmg': px(pm[0] + pm[2] / 2, pm[1] + pm[3] / 2)})
+        ops.sort(key=lambda o: o['cut'])
+        for sec in slices:
+            t = sec['top']; ch = []
+            for o in ops:
+                if sec['top'] <= o['cut'] < sec['bot']:
+                    if o['cut'] > t: ch.append({'top': t, 'h': o['cut'] - t, 'hot': [], 'anc': []})
+                    ch.append({'panel': o['panel']})
+                    t = o['res']
+            if sec['bot'] > t: ch.append({'top': t, 'h': sec['bot'] - t, 'hot': [], 'anc': []})
+            sec['chunks'] = ch
+        chunks = [c for sec in slices for c in sec['chunks'] if not c.get('panel')]
         def find(y):
-            for s in slices:
+            for s in chunks:
                 if s['top'] <= y < s['top'] + s['h']: return s
             return None
+        lost = 0
+        for o in ops:
+            row, pm = o['row'], o['pm']
+            s = find(row[1] + 3)
+            if not s: continue
+            hb = min(row[1] + row[3], s['top'] + s['h'])
+            r = '12px' if o['kind'] == 'i' else '0'
+            s['hot'].append(f'<button class="hs hs-acc" data-acc="{o["id"]}" aria-expanded="{"true" if o["open"] else "false"}" aria-controls="{o["id"]}" aria-label="{esc(o["key"])}" '
+                            f'style="left:{row[0] / W * 100:.3f}%;top:{(row[1] - s["top"]) / s["h"] * 100:.3f}%;width:{row[2] / W * 100:.3f}%;height:{(hb - row[1]) / s["h"] * 100:.3f}%;border-radius:{r} {r} 0 0"></button>')
+            s['hot'].append(f'<span class="pmx{" on" if o["open"] else ""}" data-pm="{o["id"]}" style="left:{(pm[0] - .5) / W * 100:.3f}%;top:{(pm[1] - .5 - s["top"]) / s["h"] * 100:.3f}%;width:{(pm[2] + 1) / W * 100:.3f}%;height:{(pm[3] + 1) / s["h"] * 100:.3f}%;--c:{o["pmc"]};--g:{o["pmg"]}"></span>')
+        # パンくず
+        for txt, x, y, w, h, fs in accdata.ACC.get(no, {}).get('crumbs', []):
+            s = find(y + h / 2)
+            if not s: continue
+            f = ImageFont.truetype(FONT, fs * 10)
+            segs = [g.strip() for g in txt.split('＞')]
+            pos = 0
+            for i, g in enumerate(segs):
+                pre = ' ＞ '.join(segs[:i]) + (' ＞ ' if i else '')
+                x0 = x + f.getlength(pre) / 10; x1 = x0 + f.getlength(g) / 10
+                to = CRUMB.get(g) or next((n for n, t in TITLE.items() if t == g), None)
+                if i == len(segs) - 1 or not to: continue
+                hh = 30; yy = y + h / 2 - hh / 2
+                s['hot'].append(f'<a class="hs hs-link hs-bc" href="{base}{URL[to].lstrip("/")}" aria-label="{esc(g)}" style="left:{(x0 - 4) / W * 100:.3f}%;top:{(yy - s["top"]) / s["h"] * 100:.3f}%;width:{(x1 - x0 + 8) / W * 100:.3f}%;height:{hh / s["h"] * 100:.3f}%;border-radius:6px"></a>')
         # 予約CTAの汎用ボタン
         acts = [a for a in p['acts'] if not (hdr and a[2] < 67)]
         cta = next((k for k in ks if k[0].startswith('予約CT')), None)
@@ -147,12 +243,12 @@ def build():
                      f'<button class="hs hs-web" data-act="web" style="left:34.5%;top:14.5%;width:30.8%;height:71%;border-radius:12px" aria-label="Web予約"></button>',
                      f'<a class="hs hs-tel" href="tel:0362056944" style="left:67.1%;top:14.5%;width:30.7%;height:71%;border-radius:12px" aria-label="電話相談"></a>']
         d = os.path.join(PUB, 'assets', 'p', no); os.makedirs(d, exist_ok=True)
-        for i, s in enumerate(slices):
-            im.crop((0, round(s['top'] * sc), im.width, min(im.height, round((s['top'] + s['h']) * sc)))).save(os.path.join(d, f'{i:02d}.webp'), quality=82, method=5)
+        for i, c in enumerate(chunks):
+            im.crop((0, round(c['top'] * sc), im.width, min(im.height, round((c['top'] + c['h']) * sc)))).save(os.path.join(d, f'{i:02d}.webp'), quality=82, method=5)
         pd = os.path.join(PUB, p['url'].strip('/')) if p['url'].strip('/') else PUB
         os.makedirs(pd, exist_ok=True)
         open(os.path.join(pd, 'index.html'), 'w').write(page_html(p, slices, fixed_rel))
-        report.append(f"{no}: {len(slices)}枚 リンク{sum(len(s['hot']) for s in slices)}")
+        report.append(f"{no}: {len(chunks)}枚 リンク{sum(len(c['hot']) for c in chunks)} アコーディオン{len(ops)} 未対応{sum(1 for a, c, _ in accs if not c)}")
     print('\n'.join(report))
 
 if __name__ == '__main__':

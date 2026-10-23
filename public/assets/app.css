@@ -102,4 +102,3 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .mi-ver{margin-top:20px;text-align:center;font-weight:500;font-size:12px;color:var(--o)}
 .cvx .sl{content-visibility:visible}
 .v5 .mg{border-left:0;padding:0 0 6px;border-bottom:1px solid var(--line);position:relative;color:var(--ink);font-family:"Noto Serif JP",serif}
-.v5 .mg::after{content:"";position:absolute;left:0;bottom:-1px;width:24px;height:2px;background:var(--o)}

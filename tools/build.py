@@ -256,13 +256,17 @@ def build():
         heads = p.get('heads', [])
         for lab, x, y, w, h in p['anchors']:
             key = lab.replace('（', '').split('・')[0][:4]
-            tgt = next((hy for hy, ht in heads if hy > y and (lab[:4] in ht or key in ht)), None)
+            tgt = next((hy for hy, ht in heads if hy > y and (ht.split('|')[0] == lab or lab[:4] in ht or key in ht)), None)
+            opn = ''
+            ak = next((k for k, (aa, cc, _) in enumerate(accs) if aa[5][1] > y and (aa[2].startswith(lab) or lab[:4] in aa[2])), None)
+            if ak is not None and (tgt is None or accs[ak][0][5][1] < tgt):
+                tgt = accs[ak][0][5][1]; opn = f' data-open="ap{ak}"'
             s = find(y + h / 2)
             if not s or tgt is None: continue
             aid = 'a' + hashlib.md5(lab.encode()).hexdigest()[:6]
             ts = find(tgt + 1)
             if ts: ts['anc'].append((aid, tgt))
-            s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
+            s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor{opn}', lab))
         for lab, x, y, w, h, ty in p.get('tocs', []):
             s = find(y + h / 2); ts = find(ty + 1)
             if not s or not ts: continue

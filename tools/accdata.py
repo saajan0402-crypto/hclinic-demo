@@ -1,9 +1,10 @@
 """pages.json から各ページのアコーディオン中身を集め、Figma抽出（data2）と突き合わせる"""
 import json, os, re, glob, difflib
 ROOT = os.path.dirname(os.path.abspath(__file__))
-P = json.load(open(os.path.join(ROOT, 'data2', 'pages.json')))
+D2 = 'data2_v5' if os.environ.get('HC_VER') == 'v5' else 'data2'
+P = json.load(open(os.path.join(ROOT, D2, 'pages.json')))
 ACC = {}
-for fn in sorted(glob.glob(os.path.join(ROOT, 'data2', 'a[0-9].json'))): ACC.update(json.load(open(fn)))
+for fn in sorted(glob.glob(os.path.join(ROOT, D2, 'a[0-9].json'))): ACC.update(json.load(open(fn)))
 
 def clean(s): return re.sub(r'[⟦⟧⟪⟫]', '', s or '')
 def norm(s): return re.sub(r'[\s　⟦⟧⟪⟫「」（）()・、。？?！!：:]', '', s or '').lstrip('Q')

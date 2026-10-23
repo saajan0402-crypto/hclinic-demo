@@ -49,7 +49,9 @@
   document.addEventListener('click', e => { const a = e.target.closest('a[href]'); if (!a) return;
     const href = a.getAttribute('href');
     if (a.hasAttribute('data-anchor')) { e.preventDefault(); const t = document.getElementById(href.slice(1)); if (!t) return;
+      document.documentElement.classList.add('cvx');
       const ty = t.getBoundingClientRect().top + window.scrollY, down = ty > window.scrollY;
+      setTimeout(() => { const y2 = t.getBoundingClientRect().top + window.scrollY - (down ? 0 : hdr.offsetHeight) - 8; if (Math.abs(y2 - window.scrollY) > 6) window.scrollTo({top: y2, behavior: 'auto'}); }, reduce ? 50 : 1100);
       setHide(down); lockUntil = Date.now() + 1200;
       window.scrollTo({top: ty - (down ? 0 : hdr.offsetHeight) - 8, behavior: reduce ? 'auto' : 'smooth'}); return; }
     if (href.startsWith('tel:') || a.target === '_blank' || e.metaKey || e.ctrlKey) return;

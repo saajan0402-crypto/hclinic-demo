@@ -47,7 +47,7 @@ export async function onRequest({request, env, next}) {
     const form = await request.formData();
     const pw = String(form.get('password') || ''); const back = safeBack(String(form.get('back') || '/'));
     if (await sha(SALT + ':' + pw) === expected) {
-      return new Response(null, {status: 303, headers: {Location: back, 'Set-Cookie': `${COOKIE}=${token}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`}});
+      return new Response(null, {status: 303, headers: {Location: back === '/' ? '/choose/' : back, 'Set-Cookie': `${COOKIE}=${token}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`}});
     }
     await new Promise(r => setTimeout(r, 600));
     return loginPage(back, true);

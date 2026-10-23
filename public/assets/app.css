@@ -94,3 +94,12 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .fsl::before{content:"";position:absolute;left:0;top:calc(var(--u)*15);width:5px;height:5px;border-top:1.5px solid #E39B6E;border-right:1.5px solid #E39B6E;transform:rotate(45deg)}
 .fsl:active{color:#fff}.fsl.cur{color:#fff;font-weight:700}
 .fsg.open .fsl{opacity:1;transform:none}
+/* v5（医療機関トーン版）：角を立てる */
+.v5 .mi,.v5 .menu-close,.v5 .totop,.v5 .ap-tw,.v5 .ap-more{border-radius:0}
+.v5 .ap-i{border-radius:0}
+.v5 .ap-more{box-shadow:none}
+.v5 .toast{border-radius:2px}
+.mi-ver{margin-top:20px;text-align:center;font-weight:500;font-size:12px;color:var(--o)}
+.cvx .sl{content-visibility:visible}
+.v5 .mg{border-left:0;padding:0 0 6px;border-bottom:1px solid var(--line);position:relative;color:var(--ink);font-family:"Noto Serif JP",serif}
+.v5 .mg::after{content:"";position:absolute;left:0;bottom:-1px;width:24px;height:2px;background:var(--o)}

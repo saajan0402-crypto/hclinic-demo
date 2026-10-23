@@ -4,14 +4,16 @@ from PIL import Image, ImageFont
 import accdata
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+VER = os.environ.get('HC_VER', 'v4')
 OUT = os.path.join(ROOT, 'site')
-PUB = os.path.join(OUT, 'public')
-SRC = os.path.join(ROOT, 'img_src')
+PUB = os.path.join(OUT, 'public', 'v5') if VER == 'v5' else os.path.join(OUT, 'public')
+SRC = os.path.join(ROOT, 'img_src_v5' if VER == 'v5' else 'img_src')
+DATA = 'data_v5' if VER == 'v5' else 'data'
 S = 2  # 書き出し倍率
 W = 375
 
 pages = []
-for fn in sorted(glob.glob(os.path.join(ROOT, 'data', 'd*.json'))):
+for fn in sorted(glob.glob(os.path.join(ROOT, DATA, 'd*.json'))):
     pages += json.load(open(fn))
 for p in pages:
     m = re.match(r'SP｜No\.(\d+) (.+)（([^（）]+)）$', p['name'])
@@ -58,7 +60,7 @@ def page_html(p, slices, fixed_rel):
     return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>{esc(TITLE[no])}｜エイチクリニック新宿（デモ）</title>
 <link rel="preload" as="image" href="{base}assets/p/{no}/00.webp"><link rel="stylesheet" href="{base}assets/app.css"></head>
-<body data-base="{base}"><div class="shell">
+<body{' class="v5"' if VER == "v5" else ""} data-base="{base}"><div class="shell">
 <header class="hdr"><img src="{base}assets/header.webp" alt="エイチクリニック新宿" width="{W * S}" height="{67 * S}">
 <a class="hs hs-link" href="{base}" style="left:2.5%;top:10%;width:39%;height:80%;border-radius:10px" aria-label="TOPへ"></a>
 <a class="hs hs-link" href="{base}en/" style="left:47.4%;top:25%;width:17.8%;height:50%;border-radius:999px" aria-label="English"></a>
@@ -69,8 +71,9 @@ def page_html(p, slices, fixed_rel):
 </div>
 <nav class="menu" aria-hidden="true"><div class="menu-in">
 <button class="menu-close" aria-label="閉じる">×</button>
-<p class="menu-ttl">MENU</p>
+<p class="menu-ttl">{'メニュー' if VER == 'v5' else 'MENU'}</p>
 {menu_html(base)}
+<a class="mi mi-ver" href="/choose/">表示中：{'v5（医療機関トーン版）' if VER == 'v5' else 'v4（前回版）'}｜バージョンを切り替える</a>
 </div></nav>
 <div class="toast" role="status"></div>
 <script src="{base}assets/app.js" defer></script></body></html>'''
@@ -86,7 +89,7 @@ def menu_html(base):
 FONT = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 CRUMB = {'TOP': '01', '性病検査': '04', '自費診療': '15', '当院について': '23', 'お知らせ': '26'}
 
-LEAD = json.load(open(os.path.join(ROOT, 'data2', 'lead.json')))
+LEAD = {} if VER == 'v5' else json.load(open(os.path.join(ROOT, 'data2', 'lead.json')))
 BOLD = ImageFont.truetype(os.path.join(ROOT, 'fonts', 'NotoSansJP.ttf'), 30); BOLD.set_variation_by_axes([700])
 
 def footer_html(base, cur, bg):
@@ -260,6 +263,12 @@ def build():
             ts = find(tgt + 1)
             if ts: ts['anc'].append((aid, tgt))
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
+        for lab, x, y, w, h, ty in p.get('tocs', []):
+            s = find(y + h / 2); ts = find(ty + 1)
+            if not s or not ts: continue
+            aid = 't' + hashlib.md5(lab.encode()).hexdigest()[:6]
+            ts['anc'].append((aid, ty))
+            s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
         if ft:
             fy = ft[1]
             for args in ((20, fy + 219, 112, 22, 'tel', 'href="tel:0362056944"', '電話'), (20, fy + 657, 44, 40, 'sns', 'data-act="sns"', 'X'), (74, fy + 657, 105, 40, 'sns', 'data-act="sns"', 'Instagram')):
@@ -275,7 +284,9 @@ def build():
             im.crop((0, round(c['top'] * sc), im.width, min(im.height, round((c['top'] + c['h']) * sc)))).save(os.path.join(d, f'{i:02d}.webp'), quality=82, method=5)
         pd = os.path.join(PUB, p['url'].strip('/')) if p['url'].strip('/') else PUB
         os.makedirs(pd, exist_ok=True)
-        open(os.path.join(pd, 'index.html'), 'w').write(page_html(p, slices, fixed_rel))
+        doc = page_html(p, slices, fixed_rel)
+        if VER == 'v5': doc = re.sub(r'border-radius:[^;"]+', 'border-radius:2px', doc)
+        open(os.path.join(pd, 'index.html'), 'w').write(doc)
         report.append(f"{no}: {len(chunks)}枚 リンク{sum(len(c['hot']) for c in chunks)} アコーディオン{len(ops)} 未対応{sum(1 for a, c, _ in accs if not c)}")
     print('\n'.join(report))
 

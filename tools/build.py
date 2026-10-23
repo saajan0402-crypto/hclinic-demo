@@ -50,6 +50,12 @@ def page_html(p, slices, fixed_rel):
             if c.get('panel'):
                 parts.append(c['panel']); continue
             hs = ''.join(c['hot'])
+            hero = p.get('hero')
+            if hero and p.get('hero_n') and c['top'] <= hero['photo'][1] < c['top'] + c['h']:
+                hx, hy, hw, hh = hero['photo']
+                imgs = ''.join(f'<img src="{base}assets/p/{no}/hero{k + 1}.webp" alt="" width="{hw * S}" height="{hh * S}" decoding="async"{" class=on" if k == 0 else ""}>' for k in range(p['hero_n']))
+                dots = ''.join(f'<button class="hero-dot" data-i="{k}" aria-label="スライド{k + 1}を表示" style="left:{(d[0] - hx - 4) / hw * 100:.3f}%;top:{(d[1] - hy - 11) / hh * 100:.3f}%;width:{(d[2] + 8) / hw * 100:.3f}%;height:{24 / hh * 100:.3f}%"></button>' for k, d in enumerate(hero['dots']))
+                hs = (f'<div class="hero-sl" aria-roledescription="carousel" style="left:{hx / W * 100:.3f}%;top:{(hy - c["top"]) / c["h"] * 100:.3f}%;width:{hw / W * 100:.3f}%;height:{hh / c["h"] * 100:.3f}%">{imgs}{dots}</div>') + hs
             anc = ''.join(f'<span class="anc" id="{a}" style="top:{(ay - c["top"]) / c["h"] * 100:.3f}%"></span>' for a, ay in c['anc'])
             load = 'eager' if n < 3 else 'lazy'
             parts.append(f'<div class="ch" style="aspect-ratio:{W}/{c["h"]}"><img src="{base}assets/p/{no}/{n:02d}.webp" alt="" width="{W * S}" height="{round(c["h"] * S)}" loading="{load}" decoding="async">{hs}{anc}</div>')
@@ -148,6 +154,14 @@ def build():
                 mk = Image.new('L', ai.size, 0); ImageDraw.Draw(mk).ellipse((2, 2, 110, 110), fill=255); ai.putalpha(mk)
                 ai.save(os.path.join(PUB, 'assets', 'ai.webp'), quality=90)
             im.paste(im.crop((612 - 260, fy - 88, 740 - 260, fy)), (612, fy - 88))
+        # TOPスライド（v5）：hero_v5/s1〜3.png（写真枠＝375×380の2倍書き出し）
+        hdir = os.path.join(ROOT, 'hero_v5')
+        if VER == 'v5' and p.get('hero') and os.path.isdir(hdir):
+            os.makedirs(os.path.join(PUB, 'assets', 'p', no), exist_ok=True)
+            hs_src = sorted(glob.glob(os.path.join(hdir, 's*.png')))
+            for k, fn in enumerate(hs_src):
+                Image.open(fn).convert('RGB').save(os.path.join(PUB, 'assets', 'p', no, f'hero{k + 1}.webp'), quality=86)
+            p['hero_n'] = len(hs_src)
         if no == '01':
             im.crop((0, 0, im.width, round(67 * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
             if fx:

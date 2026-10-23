@@ -69,6 +69,17 @@
   $$('.hs-menu').forEach(b => b.addEventListener('click', openMenu));
   $('.menu-close').addEventListener('click', closeMenu);
   menu.addEventListener('click', e => { if (e.target === menu) closeMenu(); });
+  // TOPスライド（背景とコピーのみ切り替え）
+  $$('.hero-sl').forEach(sl => {
+    const im = $$('img', sl), ds = $$('.hero-dot', sl); if (im.length < 2) return;
+    let i = 0, tm = null;
+    const go = n => { i = (n + im.length) % im.length; im.forEach((m, k) => m.classList.toggle('on', k === i)); ds.forEach((d, k) => d.setAttribute('aria-current', k === i ? 'true' : 'false')); };
+    const play = () => { clearInterval(tm); tm = setInterval(() => { if (!document.hidden) go(i + 1); }, 5000); };
+    ds.forEach(d => d.addEventListener('click', e => { e.stopPropagation(); go(+d.dataset.i); play(); }));
+    let sx = null; sl.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive: true});
+    sl.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) { go(i + (dx < 0 ? 1 : -1)); play(); } });
+    go(0); play();
+  });
   // ページ内リンクの着地点へ（URLの#付きで来た場合）
   if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) setTimeout(() => window.scrollTo({top: t.getBoundingClientRect().top + scrollY - hdr.offsetHeight - 8}), 50); }
 })();

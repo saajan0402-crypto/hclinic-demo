@@ -39,7 +39,7 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .totop{position:fixed;right:max(12px,calc(50% - 215px + 12px));bottom:calc(76px + env(safe-area-inset-bottom));width:42px;height:42px;border-radius:50%;border:1.5px solid var(--o);background:rgba(255,255,255,.95);color:var(--o);font-size:16px;z-index:35;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s var(--ease);cursor:pointer}
 .totop.on{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv img{opacity:1;transform:none}body{opacity:1}}
-.ai{position:absolute;left:82.4%;top:-67.7%;width:14.93%;aspect-ratio:1;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;z-index:3;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));animation:aiPulse 3.2s ease-in-out 1.2s infinite}
+.ai{position:absolute;left:calc(100% - 33px - 7.465%);top:auto;bottom:calc(100% + 58px);width:14.93%;aspect-ratio:1;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;z-index:3;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));animation:aiPulse 3.2s ease-in-out 1.2s infinite}
 .ai img{border-radius:50%}
 .ai:active{transform:scale(.94)}
 @keyframes aiPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}

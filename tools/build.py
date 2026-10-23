@@ -150,7 +150,13 @@ def build():
             im.paste(im.crop((612 - 260, fy - 88, 740 - 260, fy)), (612, fy - 88))
         if no == '01':
             im.crop((0, 0, im.width, round(67 * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
-            if fx: im.crop((0, round(fx[1] * sc), im.width, round((fx[1] + fx[2]) * sc))).save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=88)
+            if fx:
+                fb = im.crop((0, round(fx[1] * sc), im.width, round((fx[1] + fx[2]) * sc))).convert('RGB')
+                # 固定バー画像に写り込んだAIチャットボタンの下端を消す（ボタンはHTML側で別配置）
+                for yy in range(0, 30):
+                    c = fb.getpixel((610, yy)) if yy < 17 else fb.getpixel((560, yy))
+                    for xx in range(600 if yy < 17 else 622, fb.width if yy < 17 else 724): fb.putpixel((xx, yy), c)
+                fb.save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=90)
         # スライス（セクション単位）→ アコーディオン位置でさらに分割
         px = lambda x, y: '#%02x%02x%02x' % im.getpixel((min(im.width - 1, round(x * sc)), min(im.height - 1, round(y * sc))))
         def dark(x0, x1, y):

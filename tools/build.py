@@ -153,6 +153,8 @@ def build():
                 from PIL import ImageDraw
                 mk = Image.new('L', ai.size, 0); ImageDraw.Draw(mk).ellipse((2, 2, 110, 110), fill=255); ai.putalpha(mk)
                 ai.save(os.path.join(PUB, 'assets', 'ai.webp'), quality=90)
+                if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'ai_v5', 'ai.webp')):  # v5は背景透過のボタン画像（固定バーの茶色が写り込まない）
+                    shutil.copy(os.path.join(ROOT, 'ai_v5', 'ai.webp'), os.path.join(PUB, 'assets', 'ai.webp'))
             im.paste(im.crop((612 - 260, fy - 88, 740 - 260, fy)), (612, fy - 88))
         # TOPスライド（v5）：hero_v5/s1〜3.png（写真枠＝375×380の2倍書き出し）
         hdir = os.path.join(ROOT, 'hero_v5')

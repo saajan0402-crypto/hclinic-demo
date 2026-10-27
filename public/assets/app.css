@@ -110,3 +110,5 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .fv .hero-sl{animation:fvIn 1.4s var(--ease) both}
 .hero-dot{position:absolute;padding:0;border:0;background:none;cursor:pointer;z-index:2}
 @media (prefers-reduced-motion:reduce){.hero-sl img{transition:none}}
+
+.v5 .ai{filter:none}

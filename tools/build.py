@@ -21,7 +21,7 @@ for p in pages:
     p['url'] = url.replace('{ID}', 'sample')
 MAPS = json.load(open(os.path.join(ROOT, 'maps_v5.json'))) if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'maps_v5.json')) else {}
 for p in pages: p['maps'] = MAPS.get(p['no'], [])
-GMAP = 'https://maps.google.com/maps?q=' + '%E6%9D%B1%E4%BA%AC%E9%83%BD%E6%96%B0%E5%AE%BF%E5%8C%BA%E6%AD%8C%E8%88%9E%E4%BC%8E%E7%94%BA1%E4%B8%81%E7%9B%AE5-4%20%E7%AC%AC22%E6%9D%B1%E3%83%93%E3%83%AB' + '&hl=ja&z=17&output=embed'
+GMAP = 'https://maps.google.com/maps?q=%E3%82%A8%E3%82%A4%E3%83%81%E3%82%AF%E3%83%AA%E3%83%8B%E3%83%83%E3%82%AF%E6%96%B0%E5%AE%BF%20%E6%AD%8C%E8%88%9E%E4%BC%8E%E7%94%BA&ll=35.6935135,139.7029641&z=17&hl=ja&output=embed'  # Googleの掲載名「エイチクリニック新宿 歌舞伎町」でピン表示
 URL = {p['no']: p['url'] for p in pages}
 TITLE = {p['no']: p['title'] for p in pages}
 

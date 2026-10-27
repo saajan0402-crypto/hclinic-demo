@@ -123,3 +123,25 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .tsp{position:absolute;inset:0;display:none;z-index:4;pointer-events:none}
 .tsp a{pointer-events:auto}
 .tsp.on{display:block}
+/* v6：写真に重なる予約ボックス */
+.ovl{position:absolute;z-index:1;pointer-events:none;display:block;max-width:none}
+/* v6：PC版（1440px基準） */
+.pc .shell{max-width:1440px;padding-bottom:0;container-type:inline-size}
+.pc .sl{--u:calc(min(100vw,1440px)/1440);--u:calc(100cqw/1440)}
+.pc .ap-b{font-size:calc(var(--u)*16)}
+.pc .ap-tw table{font-size:calc(var(--u)*15)}
+.pc .ap-cap{font-size:calc(var(--u)*17)}
+.pc .ap-more{font-size:calc(var(--u)*16);max-width:calc(var(--u)*420);margin-left:auto;margin-right:auto}
+.pc .ap-i .ap-b{padding:calc(var(--u)*22) calc(var(--u)*34) calc(var(--u)*26)}
+.pc .ap-t .ap-b{padding:calc(var(--u)*6) calc(var(--u)*20) calc(var(--u)*24)}
+.pc .totop{right:max(16px,calc(50% - 720px + 20px));bottom:24px;width:48px;height:48px}
+.pc .fbar{display:none}
+/* v6：スマホ版／PC版の切り替え */
+.devsw{position:fixed;left:max(12px,calc(50% - 215px + 12px));bottom:calc(76px + env(safe-area-inset-bottom));z-index:36;display:flex;background:rgba(74,51,38,.88);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(74,51,38,.25);font-size:11px;line-height:1;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.devsw a{color:#fff;text-decoration:none;padding:8px 11px;border-radius:999px;white-space:nowrap;font-weight:700;letter-spacing:.03em}
+.devsw a[aria-current]{background:#fff;color:#4a3326}
+.pc .devsw{left:max(12px,calc(50% - 720px + 16px));bottom:24px;font-size:12px;flex-direction:column;border-radius:14px;width:96px}
+.pc .devsw a{padding:9px 0;text-align:center;border-radius:11px}
+.in-frame .devsw{display:none}
+.v5 .devsw,.v5 .devsw a{border-radius:2px}
+.menu:not(.open) .menu-in{box-shadow:none}  /* 閉じたメニューの影が画面右端に出ないように */

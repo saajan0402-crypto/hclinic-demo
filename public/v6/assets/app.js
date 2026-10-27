@@ -2,6 +2,7 @@
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   requestAnimationFrame(() => document.body.classList.add('ready'));
+  if (window.self !== window.top) document.documentElement.classList.add('in-frame');  // 並べて比較（iframe内）では切り替えを隠す
   window.addEventListener('pageshow', e => { if (e.persisted) document.body.classList.remove('leaving'); document.body.classList.add('ready'); });
   // スクロールで表示
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {rootMargin: '0px 0px -8% 0px', threshold: 0.06});
@@ -18,7 +19,7 @@
     const y = Math.min(Math.max(window.scrollY, 0), max);
     const d = y - lastY; lastY = y; ticking = false;
     hdr.classList.toggle('scrolled', y > 8);
-    fbar.classList.toggle('on', y > 160);
+    if (fbar) fbar.classList.toggle('on', y > 160);
     tt.classList.toggle('on', y > 900);
     if (document.body.classList.contains('menu-open') || y < hdr.offsetHeight + 24) { setHide(false); travel = 0; return; }
     if (Date.now() < lockUntil || d === 0) return;
@@ -59,16 +60,16 @@
     e.preventDefault(); closeMenu(); document.body.classList.add('leaving'); setTimeout(() => { location.href = a.href; }, reduce ? 0 : 180); });
   // 予約ボタン（デモ）
   const toast = $('.toast'); let tm;
-  const say = m => { toast.textContent = m; toast.classList.add('on'); clearTimeout(tm); tm = setTimeout(() => toast.classList.remove('on'), 2200); };
+  const say = m => { if (!toast) return; toast.textContent = m; toast.classList.add('on'); clearTimeout(tm); tm = setTimeout(() => toast.classList.remove('on'), 2200); };
   $$('[data-act]').forEach(b => b.addEventListener('click', () => say(({line: 'デモのため、LINE予約には移動しません', web: 'デモのため、Web予約には移動しません', ai: 'AIチャットはデモでは起動しません', sns: 'デモのため、SNSには移動しません'})[b.dataset.act] || 'デモ表示です')));
   // メニュー
   const menu = $('.menu');
   const openMenu = () => { menu.classList.add('open'); menu.setAttribute('aria-hidden', 'false'); document.body.classList.add('menu-open');
     $$('.mi', menu).forEach((m, i) => m.style.transitionDelay = (reduce ? 0 : 60 + i * 18) + 'ms'); };
-  function closeMenu() { menu.classList.remove('open'); menu.setAttribute('aria-hidden', 'true'); document.body.classList.remove('menu-open'); $$('.mi', menu).forEach(m => m.style.transitionDelay = '0ms'); }
+  function closeMenu() { if (!menu) return; menu.classList.remove('open'); menu.setAttribute('aria-hidden', 'true'); document.body.classList.remove('menu-open'); $$('.mi', menu).forEach(m => m.style.transitionDelay = '0ms'); }
   $$('.hs-menu').forEach(b => b.addEventListener('click', openMenu));
-  $('.menu-close').addEventListener('click', closeMenu);
-  menu.addEventListener('click', e => { if (e.target === menu) closeMenu(); });
+  if (menu) { $('.menu-close').addEventListener('click', closeMenu);
+  menu.addEventListener('click', e => { if (e.target === menu) closeMenu(); }); }
   // TOPスライド（背景とコピーのみ切り替え）
   $$('.hero-sl').forEach(sl => {
     const im = $$('img', sl), ds = $$('.hero-dot', sl); if (im.length < 2) return;

@@ -21,6 +21,11 @@ h1{font:700 20px/1.5 "Noto Serif JP",serif;text-align:center;margin:0;letter-spa
 .opt p{font-size:13px;line-height:1.75;color:var(--sub);margin:0}
 .go{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px;font-weight:700;color:var(--o)}
 .old .go{color:var(--sub)}
+.gos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.gos a{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1.5px solid var(--o);color:var(--o);font-size:14px;font-weight:700;text-decoration:none;background:#fff;transition:background .2s,color .2s}
+.gos a:hover{background:var(--o);color:#fff}
+.gos a.wide{grid-column:1/-1;background:var(--o);color:#fff}
+.gos a.wide:hover{opacity:.9}
 details{background:#fff;border:1px solid var(--line);margin:4px 0 0}
 summary{list-style:none;cursor:pointer;padding:16px 20px;font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 summary::-webkit-details-marker{display:none}
@@ -38,15 +43,40 @@ details[open] summary i::after{transform:translateY(-50%) rotate(0)}
 </style></head><body><div class="wrap">
 <div class="logo">H</div>
 <h1>エイチクリニック新宿</h1>
-<p class="sub">ワイヤーフレーム（SP）デモサイト｜表示するバージョンを選んでください</p>
+<p class="sub">ワイヤーフレーム（スマホ・PC）デモサイト｜表示するバージョンを選んでください</p>
 
-<a class="opt" href="/v6/"><span class="tag">最新</span><h2>v6　フィードバック反映版</h2><p>v5へのフィードバックを反映した最新版です。TOPの導線（症状・病名から探す／当院について／よくある質問）を追加し、下層ページの見せ方を整理しました。</p><span class="go">v6を見る<span>→</span></span></a>
+<div class="opt"><span class="tag">最新</span><h2>v6　デザイン見直し版</h2><p>参考サイトをもとに、全体の見せ方（写真の使い方・配置・カードの形）を見直した最新版です。色味と掲載内容はそのままです。今回からPC版も全30ページご覧いただけます。</p>
+<div class="gos"><a href="/v6/">スマホ版<span>→</span></a><a href="/v6/pc/">PC版<span>→</span></a><a class="wide" href="/v6/compare/">スマホ・PCを並べて比較<span>→</span></a></div></div>
 
 <a class="opt old" href="/v5/"><span class="tag">前回</span><h2>v5　医療機関トーン版</h2><p>前回ご確認いただいたバージョンです。比較用にご覧いただけます。</p><span class="go">v5を見る<span>→</span></span></a>
 
 <a class="opt old" href="/"><span class="tag">前々回</span><h2>v4　あしらい追加版</h2><p>v5の前にご確認いただいたバージョンです。比較用にご覧いただけます。</p><span class="go">v4を見る<span>→</span></span></a>
 
-<details><summary>v5からの変更点（v6）<i></i></summary><div class="log">
+<details open><summary>デザインの見直し（v6・今回）<i></i></summary><div class="log">
+<h3>TOP</h3>
+<ul><li>メインビジュアル：キャッチコピーと特長バッジを写真の上に重ね、予約ボックスを写真に重ねて配置</li>
+<li>お知らせ：日付・カテゴリと見出しを2段に分けて読みやすく（PCは左に見出し、右にタブと一覧）</li>
+<li>当院の特徴：大きな写真に説明ボックスを重ね、大きな番号を添えて左右交互に配置</li>
+<li>診療案内：科目ごとのカードを横並びに、自費診療は横長カードで別枠に</li>
+<li>自費診療：写真の帯の下に、説明文と写真付きバナー（6種）を並べる構成に</li>
+<li>症状から探す：体のイラストから部位を選ぶ形に（イラストは仮のシルエットです）</li>
+<li>病名から探す：タブ＋写真＋病名ボタン＋「診療案内を見る」ボタンのパネルに</li>
+<li>医院情報：白いカードの中に、写真・診療時間表・地図・外観写真をまとめて掲載</li>
+<li>院長紹介：写真に名前のカードを重ね、ひとことメッセージと署名を添える形に</li></ul>
+<h3>下層ページ</h3>
+<ul><li>ページ冒頭を写真の帯に変更し、ページタイトルを写真の上に表示</li>
+<li>関連ページへのリンクを写真付きのバナーに</li>
+<li>本文中の写真を角丸にし、左下に説明ラベルを付ける形に統一</li>
+<li>院長紹介をTOPと同じデザインに統一</li></ul>
+<h3>デモサイト</h3>
+<ul><li>PC版（全30ページ）を追加</li>
+<li>画面左下の切り替えボタンで、同じページのスマホ版／PC版を行き来できます</li>
+<li>「並べて比較」では、スマホ版とPC版を左右に並べて表示（片方でページを移動すると、もう片方も同じページに移動）</li></ul>
+<h3>補足</h3>
+<ul><li>写真は仮です。本番は撮影素材または有償素材を想定しています</li>
+<li>院長紹介の「経歴・資格・診療への想い」は仮の文言です</li></ul>
+</div></details>
+<details style="margin-top:10px"><summary>v5からの変更点（v6・前回）<i></i></summary><div class="log">
 <h3>TOP</h3>
 <ul><li>メインビジュアル下の「本日営業中」バーを削除</li>
 <li>「症状から探す」を追加（内科／尿のトラブル／性感染症／自費診療のお悩み、のカテゴリ別にボタンを表示）</li>
@@ -99,5 +129,5 @@ details[open] summary i::after{transform:translateY(-50%) rotate(0)}
 <ul><li>PC版のデザインも同じ方針で作成しました（Figma）</li></ul>
 </div></details>
 
-<p class="note">各ページのメニュー（≡）の一番下からいつでもこの画面に戻れます。<br>関係者限定の確認用サイトです。</p>
+<p class="note">スマホ版は各ページのメニュー（≡）の一番下から、PC版は画面左下の「版を選ぶ」から、いつでもこの画面に戻れます。<br>関係者限定の確認用サイトです。</p>
 </div></body></html>

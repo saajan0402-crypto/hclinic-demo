@@ -7,18 +7,21 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 VER = os.environ.get('HC_VER', 'v4')
 OUT = os.path.join(ROOT, 'site')
 NEWV = VER in ('v5', 'v6')  # v5以降は /vN/ 以下に出力
-PUB = os.path.join(OUT, 'public', VER) if NEWV else os.path.join(OUT, 'public')
-SRC = os.path.join(ROOT, f'img_src_{VER}' if NEWV else 'img_src')
-DATA = f'data_{VER}' if NEWV else 'data'
+PC = os.environ.get('HC_DEV') == 'pc'  # PC版（v6〜）：/vN/pc/ 以下に出力
+SUF = 'pc' if PC else ''
+PUB = os.path.join(OUT, 'public', VER, 'pc') if PC else (os.path.join(OUT, 'public', VER) if NEWV else os.path.join(OUT, 'public'))
+SRC = os.path.join(ROOT, f'img_src_{VER}{SUF}' if NEWV else 'img_src')
+DATA = f'data_{VER}{SUF}' if NEWV else 'data'
 VLABEL = {'v4': 'v4（前回版）', 'v5': 'v5（医療機関トーン版）', 'v6': 'v6（フィードバック反映版）'}
-S = 2  # 書き出し倍率
-W = 375
+S = 1.5 if PC else 2  # 書き出し倍率
+W = 1440 if PC else 375
+HH = 146 if PC else 67  # ヘッダーの高さ
 
 pages = []
 for fn in sorted(glob.glob(os.path.join(ROOT, DATA, 'd*.json'))):
     pages += json.load(open(fn))
 for p in pages:
-    m = re.match(r'SP｜No\.(\d+) (.+)（([^（）]+)）$', p['name'])
+    m = re.match(r'(?:SP|PC)｜No\.(\d+) (.+)（([^（）]+)）$', p['name'])
     p['no'], p['title'], url = m.group(1), m.group(2), m.group(3)
     p['url'] = url.replace('{ID}', 'sample')
 MAPS = json.load(open(os.path.join(ROOT, 'maps_v5.json'))) if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'maps_v5.json')) else {}
@@ -61,6 +64,8 @@ def page_html(p, slices, fixed_rel):
                 imgs = ''.join(f'<img src="{base}assets/p/{no}/hero{k + 1}.webp" alt="" width="{hw * S}" height="{hh * S}" decoding="async"{" class=on" if k == 0 else ""}>' for k in range(p['hero_n']))
                 dots = ''.join(f'<button class="hero-dot" data-i="{k}" aria-label="スライド{k + 1}を表示" style="left:{(d[0] - hx - 4) / hw * 100:.3f}%;top:{(d[1] - hy - 11) / hh * 100:.3f}%;width:{(d[2] + 8) / hw * 100:.3f}%;height:{24 / hh * 100:.3f}%"></button>' for k, d in enumerate(hero['dots']))
                 hs = (f'<div class="hero-sl" aria-roledescription="carousel" style="left:{hx / W * 100:.3f}%;top:{(hy - c["top"]) / c["h"] * 100:.3f}%;width:{hw / W * 100:.3f}%;height:{hh / c["h"] * 100:.3f}%">{imgs}{dots}</div>') + hs
+                for k, (ox, oy, ow, oh) in enumerate(p.get('ovl', [])):  # 写真に重なる予約ボックスはスライドの上に重ねる
+                    hs += f'<img class="ovl" src="{base}assets/p/{no}/box{k}.webp" alt="" style="left:{ox / W * 100:.3f}%;top:{(oy - c["top"]) / c["h"] * 100:.3f}%;width:{ow / W * 100:.3f}%;height:{oh / c["h"] * 100:.3f}%">'
             for mx, my, mw, mh in p.get('maps', []):
                 if c['top'] <= my < c['top'] + c['h']:
                     hs = (f'<div class="gmap" style="left:{mx / W * 100:.3f}%;top:{(my - c["top"]) / c["h"] * 100:.3f}%;width:{mw / W * 100:.3f}%;height:{mh / c["h"] * 100:.3f}%">'
@@ -83,15 +88,13 @@ def page_html(p, slices, fixed_rel):
     return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>{esc(TITLE[no])}｜エイチクリニック新宿（デモ）</title>
 <link rel="preload" as="image" href="{base}assets/p/{no}/00.webp"><link rel="stylesheet" href="{base}assets/app.css"></head>
-<body{(' class="v5 ' + VER + '"') if NEWV else ""} data-base="{base}"><div class="shell">
-<header class="hdr"><img src="{base}assets/header.webp" alt="エイチクリニック新宿" width="{W * S}" height="{67 * S}">
-<a class="hs hs-link" href="{base}" style="left:2.5%;top:10%;width:39%;height:80%;border-radius:10px" aria-label="TOPへ"></a>
-<a class="hs hs-link" href="{base}en/" style="left:47.4%;top:25%;width:17.8%;height:50%;border-radius:999px" aria-label="English"></a>
-<button class="hs hs-web" data-act="web" style="left:65.9%;top:27%;width:17.9%;height:46%;border-radius:999px" aria-label="Web予約"></button>
-<button class="hs hs-menu" style="left:84.7%;top:15%;width:12.9%;height:70%;border-radius:10px" aria-label="メニュー"></button></header>
+<body{(' class="v5 ' + VER + (' pc' if PC else '') + '"') if NEWV else ""} data-base="{base}"><div class="shell">
+<header class="hdr"><img src="{base}assets/header.webp" alt="エイチクリニック新宿" width="{W * S}" height="{HH * S}">
+{''.join(p.get('hdr_hot', [])) if PC else HDR_SP.format(base=base)}</header>
 <main>{''.join(secs)}</main>
-<div class="fbar"><img src="{base}assets/fixed.webp" alt="" width="{W * S}" height="{62 * S}">{fhs}<button class="ai" data-act="ai" aria-label="AIチャット"><img src="{base}assets/ai.webp" alt="" width="112" height="112"></button></div>
+{'<div class="fbar" hidden></div>' if PC else FBAR.format(base=base, w=W * S, h=62 * S, fhs=fhs)}
 </div>
+{devsw(p, base) if VER == 'v6' else ''}
 <nav class="menu" aria-hidden="true"><div class="menu-in">
 <button class="menu-close" aria-label="閉じる">×</button>
 <p class="menu-ttl">{'メニュー' if NEWV else 'MENU'}</p>
@@ -100,6 +103,19 @@ def page_html(p, slices, fixed_rel):
 </div></nav>
 <div class="toast" role="status"></div>
 <script src="{base}assets/app.js" defer></script></body></html>'''
+
+HDR_SP = '''<a class="hs hs-link" href="{base}" style="left:2.5%;top:10%;width:39%;height:80%;border-radius:10px" aria-label="TOPへ"></a>
+<a class="hs hs-link" href="{base}en/" style="left:47.4%;top:25%;width:17.8%;height:50%;border-radius:999px" aria-label="English"></a>
+<button class="hs hs-web" data-act="web" style="left:65.9%;top:27%;width:17.9%;height:46%;border-radius:999px" aria-label="Web予約"></button>
+<button class="hs hs-menu" style="left:84.7%;top:15%;width:12.9%;height:70%;border-radius:10px" aria-label="メニュー"></button>'''
+FBAR = '<div class="fbar"><img src="{base}assets/fixed.webp" alt="" width="{w}" height="{h}">{fhs}<button class="ai" data-act="ai" aria-label="AIチャット"><img src="{base}assets/ai.webp" alt="" width="112" height="112"></button></div>'
+
+def devsw(p, base):  # スマホ版／PC版の切り替えと「並べて比較」
+    u = p['url'].lstrip('/')
+    root = base + ('../' if PC else '')  # /v6/ への相対パス
+    sp, pc, cmp_ = f'{root}{u}', f'{root}pc/{u}', f'{root}compare/?p=/{u}'
+    a = lambda href, lab, cur: f'<a href="{href}"{" aria-current=page" if cur else ""}>{lab}</a>'
+    return f'<nav class="devsw" aria-label="表示の切り替え">{a(sp, "スマホ", not PC)}{a(pc, "PC", PC)}{a(cmp_, "並べて比較", False)}{a("/choose/", "版を選ぶ", False) if PC else ""}</nav>'  # PCはメニューが無いので版の選択への入口もここに
 
 MENU = [('診療科目', ['02', '03']), ('性病検査', ['04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']),
         ('自費診療', ['15', '16', '17', '18', '19', '20', '21']), ('クリニック', ['22', '23', '24', '25', '26', '29', '28', '30'])]
@@ -174,15 +190,21 @@ def build():
                     shutil.copy(os.path.join(ROOT, 'ai_v5', 'ai.webp'), os.path.join(PUB, 'assets', 'ai.webp'))
             im.paste(im.crop((612 - 260, fy - 88, 740 - 260, fy)), (612, fy - 88))
         # TOPスライド（v5）：hero_v5/s1〜3.png（写真枠＝375×380の2倍書き出し）
-        hdir = os.path.join(ROOT, f'hero_{VER}')
+        hdir = os.path.join(ROOT, f'hero_{VER}{SUF}')
         if NEWV and p.get('hero') and os.path.isdir(hdir):
             os.makedirs(os.path.join(PUB, 'assets', 'p', no), exist_ok=True)
             hs_src = sorted(glob.glob(os.path.join(hdir, 's*.png')))
             for k, fn in enumerate(hs_src):
                 Image.open(fn).convert('RGB').save(os.path.join(PUB, 'assets', 'p', no, f'hero{k + 1}.webp'), quality=86)
             p['hero_n'] = len(hs_src)
+            p['ovl'] = []
+            for k, (ox, oy, ow, oh) in enumerate(p.get('boxes') or []):
+                hx, hy, hw, hh = p['hero']['photo']
+                if oy < hy + hh and oy + oh > hy:
+                    im.crop((round(ox * sc), round(oy * sc), round((ox + ow) * sc), round((oy + oh) * sc))).save(os.path.join(PUB, 'assets', 'p', no, f'box{k}.webp'), quality=88)
+                    p['ovl'].append([ox, oy, ow, oh])
         if no == '01':
-            im.crop((0, 0, im.width, round(67 * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
+            im.crop((0, 0, im.width, round(HH * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
             if fx:
                 fb = im.crop((0, round(fx[1] * sc), im.width, round((fx[1] + fx[2]) * sc))).convert('RGB')
                 # 固定バー画像に写り込んだAIチャットボタンの下端を消す（ボタンはHTML側で別配置）
@@ -190,7 +212,7 @@ def build():
                     c = fb.getpixel((610, yy)) if yy < 17 else fb.getpixel((560, yy))
                     for xx in range(600 if yy < 17 else 622, fb.width if yy < 17 else 724): fb.putpixel((xx, yy), c)
                 fb.save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=90)
-        tfile = os.path.join(ROOT, f'tabs_{VER}.json')
+        tfile = os.path.join(ROOT, f'tabs_{VER}{SUF}.json')
         if NEWV and no == '01' and os.path.exists(tfile):  # 病名タブ（切替）：tabs_vN/t2〜.png＋位置データ
             tj = json.load(open(tfile)); bx, by, bw, bh = tj['box']
             os.makedirs(os.path.join(PUB, 'assets', 'p', no), exist_ok=True)
@@ -198,7 +220,7 @@ def build():
             b0.save(os.path.join(PUB, 'assets', 'p', no, 'tab1.webp'), quality=88)
             bg = im.getpixel((round(10 * sc), round((by + 5) * sc)))
             for k in range(2, len(tj['variants']) + 1):
-                v = Image.open(os.path.join(ROOT, f'tabs_{VER}', f't{k}.png')).convert('RGBA').resize(b0.size)
+                v = Image.open(os.path.join(ROOT, f'tabs_{VER}{SUF}', f't{k}.png')).convert('RGBA').resize(b0.size)
                 base_im = Image.new('RGBA', b0.size, bg + (255,)); base_im.alpha_composite(v)
                 base_im.convert('RGB').save(os.path.join(PUB, 'assets', 'p', no, f'tab{k}.webp'), quality=88)
             p['tabsw'] = {'box': tj['box'], 'tabs': tj['tabs'], 'vars': [v['links'] for v in tj['variants']]}
@@ -216,10 +238,20 @@ def build():
                 if best is None or v < best[0]: best = (v, ln)
             buf = io.BytesIO(); best[1].save(buf, 'PNG', optimize=True)
             return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+        def sidebg(y0, x0, x1, n):  # 写真や模様の背景のとき：開いた中身の左右に、下に続く背景そのものを敷く（1px引き伸ばしだと縞になるため）
+            y1 = min(y0 + 260, n)
+            if y1 - y0 < 20: return ''
+            from PIL import ImageStat
+            sides = [im.crop((0, round(y0 * sc), max(1, round((x0 - 6) * sc)), round(y1 * sc))), im.crop((min(im.width - 1, round((x1 + 6) * sc)), round(y0 * sc), im.width, round(y1 * sc)))]
+            if max(ImageStat.Stat(c.convert('L')).stddev[0] for c in sides) < 1.6: return ''
+            fn = f'bg{len(bgs)}.webp'; bgs.append((fn, im.crop((0, round(y0 * sc), im.width, round(min(n, y0 + 1400) * sc)))))
+            return f'url({base}assets/p/{no}/{fn}) 0 0/100% auto no-repeat,'
+        bgs = []
         def light(b):  # ＋/−の記号色＝枠内でいちばん明るい色（中心が記号から外れていても拾える）
             x0, y0, w0, h0 = b
             box = im.crop((round((x0 + w0 * .2) * sc), round((y0 + h0 * .2) * sc), round((x0 + w0 * .8) * sc), round((y0 + h0 * .8) * sc)))
-            return '#%02x%02x%02x' % max(box.getdata(), key=sum)
+            bgc = im.getpixel((round((x0 + 3) * sc), round((y0 + h0 / 2) * sc)))  # 記号色＝丸の色からいちばん離れた色（濃い丸×白記号／淡い丸×濃い記号のどちらも拾える）
+            return '#%02x%02x%02x' % max(box.getdata(), key=lambda c: sum((a - b) ** 2 for a, b in zip(c, bgc)))
         slices = []
         for a, b in zip(pts, pts[1:]):
             if hdr and a == hdr[1]: continue
@@ -243,12 +275,14 @@ def build():
                 inner = ''
                 sec_bg = strip(row[1], row[0], row[0] + row[2])
             content = render_blocks(c['body'], base) if c else ''
-            panel = (f'<div class="apw" style="background:url({sec_bg}) 0 0/100% 100% no-repeat"><div class="ap ap-{kind}{" open" if op else ""}" id="{rid}" style="{st}">{inner}'
+            sbot = next((sl['bot'] for sl in slices if sl['top'] <= cut < sl['bot']), cut)
+            ex = sidebg(cut, item[0], item[0] + item[2], sbot) if kind == 'i' else ''  # カード型のみ（テキスト型は中身の背面が透けるため対象外）
+            panel = (f'<div class="apw" style="background:{ex}url({sec_bg}) 0 0/100% 100% no-repeat"><div class="ap ap-{kind}{" open" if op else ""}" id="{rid}" style="{st}">{inner}'
                      f'<div class="ap-g"><div class="ap-in"><div class="ap-b">{content}</div></div></div></div></div>')
             ops.append({'cut': cut, 'res': res, 'panel': panel, 'id': rid, 'open': op, 'row': row, 'pm': pm, 'kind': kind, 'key': key,
                         'pmc': px(pm[0] + 3, pm[1] + pm[3] / 2), 'pmg': light(pm)})
         ft = next((k for k in ks if k[0].startswith('フッター')), None)
-        if ft:
+        if ft and not PC:  # スマホのフッターはサイトマップを開閉式に（PCは画像のまま）
             fy = ft[1]
             ops.append({'cut': fy + 272, 'res': fy + 650, 'panel': footer_html(base, no, px(8, fy + 300)), 'row': None})
         ops.sort(key=lambda o: o['cut'])
@@ -292,9 +326,12 @@ def build():
                 hh = 30; yy = y + h / 2 - hh / 2
                 s['hot'].append(f'<a class="hs hs-link hs-bc" href="{base}{URL[to].lstrip("/")}" aria-label="{esc(g)}" style="left:{(x0 - 4) / W * 100:.3f}%;top:{(yy - s["top"]) / s["h"] * 100:.3f}%;width:{(x1 - x0 + 8) / W * 100:.3f}%;height:{hh / s["h"] * 100:.3f}%;border-radius:6px"></a>')
         # 予約CTAの汎用ボタン
-        acts = [a for a in p['acts'] if not (hdr and a[2] < 67)]
+        if PC:  # PCのヘッダー（ナビ・予約ボタン）はFigmaの抽出位置から
+            p['hdr_hot'] = [hot(x, y, w, h, 0, HH, 'link', link_attr(to, base), TITLE[to]) for to, x, y, w, h in p['links'] if y + h / 2 < HH and to in URL]
+            p['hdr_hot'] += [hot(x, y, w, h, 0, HH, k, 'href="tel:0362056944"' if k == 'tel' else f'data-act="{k}"', k) for k, x, y, w, h in p['acts'] if y < HH]
+        acts = [a for a in p['acts'] if not (hdr and a[2] < HH)]
         cta = next((k for k in ks if k[0].startswith('予約CT')), None)
-        if cta and not any(cta[1] < a[2] < cta[1] + cta[2] for a in acts):
+        if cta and not PC and not any(cta[1] < a[2] < cta[1] + cta[2] for a in acts):
             acts += [['line', 35, cta[1] + 198, 305, 50], ['web', 35, cta[1] + 265, 305, 50], ['tel', 35, cta[1] + 395, 305, 62]]
         fixed_rel = []
         for k, x, y, w, h in acts:
@@ -330,7 +367,7 @@ def build():
             aid = 't' + hashlib.md5(lab.encode()).hexdigest()[:6]
             ts['anc'].append((aid, ty))
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
-        if ft:
+        if ft and not PC:
             fy = ft[1]
             for args in ((20, fy + 219, 112, 22, 'tel', 'href="tel:0362056944"', '電話'), (20, fy + 657, 44, 40, 'link', 'href="https://x.com/h_clinic2222" target="_blank" rel="noopener"', 'X（新しいタブで開きます）'), (74, fy + 657, 105, 40, 'link', 'href="https://www.instagram.com/h_clinic_shinjuku/" target="_blank" rel="noopener"', 'Instagram（新しいタブで開きます）')):
                 x, y, w, h, k, attr, lab = args
@@ -341,6 +378,7 @@ def build():
                      f'<button class="hs hs-web" data-act="web" style="left:34.5%;top:14.5%;width:30.8%;height:71%;border-radius:12px" aria-label="Web予約"></button>',
                      f'<a class="hs hs-tel" href="tel:0362056944" style="left:67.1%;top:14.5%;width:30.7%;height:71%;border-radius:12px" aria-label="電話相談"></a>']
         d = os.path.join(PUB, 'assets', 'p', no); os.makedirs(d, exist_ok=True)
+        for fn, bim in bgs: bim.save(os.path.join(d, fn), quality=72, method=5)
         for i, c in enumerate(chunks):
             im.crop((0, round(c['top'] * sc), im.width, min(im.height, round((c['top'] + c['h']) * sc)))).save(os.path.join(d, f'{i:02d}.webp'), quality=82, method=5)
         pd = os.path.join(PUB, p['url'].strip('/')) if p['url'].strip('/') else PUB
@@ -349,6 +387,10 @@ def build():
         if NEWV: doc = re.sub(r'border-radius:[^;"]+', 'border-radius:2px', doc)
         open(os.path.join(pd, 'index.html'), 'w').write(doc)
         report.append(f"{no}: {len(chunks)}枚 リンク{sum(len(c['hot']) for c in chunks)} アコーディオン{len(ops)} 未対応{sum(1 for a, c, _ in accs if not c)}")
+    if VER == 'v6' and not PC:  # 並べて比較ページ（/v6/compare/）
+        opts = ''.join(f'<option value="/{p["url"].lstrip("/")}">{p["no"]} {esc(p["title"])}</option>' for p in sorted(pages, key=lambda x: x['no']))
+        os.makedirs(os.path.join(PUB, 'compare'), exist_ok=True)
+        open(os.path.join(PUB, 'compare', 'index.html'), 'w').write(open(os.path.join(ROOT, 'compare_tpl.html')).read().replace('__OPTS__', opts))
     print('\n'.join(report))
 
 if __name__ == '__main__':

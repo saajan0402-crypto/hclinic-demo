@@ -384,7 +384,7 @@ def build():
         pd = os.path.join(PUB, p['url'].strip('/')) if p['url'].strip('/') else PUB
         os.makedirs(pd, exist_ok=True)
         doc = page_html(p, slices, fixed_rel)
-        if NEWV: doc = re.sub(r'border-radius:[^;"]+', 'border-radius:2px', doc)
+        if NEWV: doc = re.sub(r'border-radius:[^;"]+', 'border-radius:0' if VER == 'v6' else 'border-radius:2px', doc)  # v6は角丸なし
         open(os.path.join(pd, 'index.html'), 'w').write(doc)
         report.append(f"{no}: {len(chunks)}枚 リンク{sum(len(c['hot']) for c in chunks)} アコーディオン{len(ops)} 未対応{sum(1 for a, c, _ in accs if not c)}")
     if VER == 'v6' and not PC:  # 並べて比較ページ（/v6/compare/）

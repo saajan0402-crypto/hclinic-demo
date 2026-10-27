@@ -145,3 +145,5 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .in-frame .devsw{display:none}
 .v5 .devsw,.v5 .devsw a{border-radius:2px}
 .menu:not(.open) .menu-in{box-shadow:none}  /* 閉じたメニューの影が画面右端に出ないように */
+/* v6：角丸は使わない（すべて角あり） */
+.v6 .toast,.v6 .devsw,.v6 .devsw a,.v6 .pc .devsw,.v6 .hs,.v6 .ap,.v6 .ap-i,.v6 .ap-tw,.v6 .ap-more,.v6 .mi,.v6 .menu-close,.v6 .totop,.v6 .gmap,.v6 .gmap iframe,.v6 .pmx::before,.v6 .pmx::after{border-radius:0!important}

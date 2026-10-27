@@ -40,14 +40,15 @@ body{background:#ece4da;color:var(--ink);font-family:"Hiragino Sans","Noto Sans 
   const norm = p => '/' + (p || '').replace(/^\/+/, '').replace(/index\.html$/, '');
   const qp = new URLSearchParams(location.search).get('p');
   let cur = norm(qp || '/');
-  const fit = () => { const s = pcf.clientWidth / 1440; pc.style.transform = `scale(${s})`; pc.style.height = (pcf.clientHeight / s) + 'px'; document.getElementById('sc').textContent = Math.round(s * 100); };
+  const fit = () => { const s = Math.min(1, pcf.clientWidth / 1440); pc.style.left = Math.max(0, (pcf.clientWidth - 1440 * s) / 2) + 'px';  // 拡大はしない（1440px以上は等倍で中央に） pc.style.transform = `scale(${s})`; pc.style.height = (pcf.clientHeight / s) + 'px'; document.getElementById('sc').textContent = Math.round(s * 100); };
   addEventListener('resize', fit); fit();
   const pathOf = f => { try { const p = f.contentWindow.location.pathname; return p.startsWith(ROOT) ? p.slice(ROOT.length - 1) : null; } catch (e) { return null; } };
   const show = (p, from) => {
     cur = norm(p);
     const spU = ROOT + cur.slice(1), pcU = ROOT + 'pc' + cur;
-    if (from !== 'sp' && norm(pathOf(sp)) !== cur) sp.src = spU;
-    if (from !== 'pc' && norm((pathOf(pc) || '').replace(/^\/pc/, '')) !== cur) pc.src = pcU;
+    const sNow = pathOf(sp), pNow = pathOf(pc);  // 未読み込み（about:blank）のときは null
+    if (from !== 'sp' && (sNow === null || norm(sNow) !== cur)) sp.src = spU;
+    if (from !== 'pc' && (pNow === null || norm(pNow.replace(/^\/pc/, '')) !== cur)) pc.src = pcU;
     document.getElementById('spo').href = spU; document.getElementById('pco').href = pcU;
     if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
     try { history.replaceState(null, '', '?p=' + cur); } catch (e) {}

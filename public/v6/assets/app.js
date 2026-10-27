@@ -83,3 +83,6 @@
   // ページ内リンクの着地点へ（URLの#付きで来た場合）
   if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) setTimeout(() => window.scrollTo({top: t.getBoundingClientRect().top + scrollY - hdr.offsetHeight - 8}), 50); }
 })();
+/* 病名タブ（v6）：タブで画像とリンクを切り替え */
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.tsw-tab');if(!b)return;var w=b.closest('.tsw'),i=+b.getAttribute('data-i');
+w.querySelectorAll(':scope>img').forEach(function(im,k){im.classList.toggle('on',k===i)});w.querySelectorAll('.tsp').forEach(function(p,k){p.classList.toggle('on',k===i)});});

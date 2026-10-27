@@ -65,6 +65,14 @@ def page_html(p, slices, fixed_rel):
                 if c['top'] <= my < c['top'] + c['h']:
                     hs = (f'<div class="gmap" style="left:{mx / W * 100:.3f}%;top:{(my - c["top"]) / c["h"] * 100:.3f}%;width:{mw / W * 100:.3f}%;height:{mh / c["h"] * 100:.3f}%">'
                           f'<iframe src="{GMAP}" title="Googleマップ（エイチクリニック新宿）" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>') + hs
+            tw = p.get('tabsw')
+            if tw and c['top'] <= tw['box'][1] < c['top'] + c['h']:
+                bx, by, bw, bh = tw['box']
+                pc = lambda v, t: f'{v / t * 100:.3f}%'
+                imgs = ''.join(f'<img src="{base}assets/p/{no}/tab{k + 1}.webp" alt="" width="{bw * S}" height="{bh * S}" decoding="async"{" class=on" if k == 0 else ""}>' for k in range(len(tw['vars'])))
+                btns = ''.join(f'<button class="tsw-tab" data-i="{k}" aria-label="タブ{k + 1}" style="left:{pc(x, bw)};top:{pc(y, bh)};width:{pc(w, bw)};height:{pc(h, bh)}"></button>' for k, (x, y, w, h) in enumerate(tw['tabs']))
+                pans = ''.join(f'<div class="tsp{" on" if k == 0 else ""}">' + ''.join(f'<a class="hs hs-link" {link_attr(to, base)} aria-label="{esc(TITLE.get(to, ""))}" style="left:{pc(x, bw)};top:{pc(y, bh)};width:{pc(w, bw)};height:{pc(h, bh)};border-radius:999px"></a>' for to, x, y, w, h in v) + '</div>' for k, v in enumerate(tw['vars']))
+                hs = (f'<div class="tsw" style="left:{bx / W * 100:.3f}%;top:{(by - c["top"]) / c["h"] * 100:.3f}%;width:{bw / W * 100:.3f}%;height:{bh / c["h"] * 100:.3f}%">{imgs}{btns}{pans}</div>') + hs
             anc = ''.join(f'<span class="anc" id="{a}" style="top:{(ay - c["top"]) / c["h"] * 100:.3f}%"></span>' for a, ay in c['anc'])
             load = 'eager' if n < 3 else 'lazy'
             parts.append(f'<div class="ch" style="aspect-ratio:{W}/{c["h"]}"><img src="{base}assets/p/{no}/{n:02d}.webp" alt="" width="{W * S}" height="{round(c["h"] * S)}" loading="{load}" decoding="async">{hs}{anc}</div>')
@@ -182,6 +190,18 @@ def build():
                     c = fb.getpixel((610, yy)) if yy < 17 else fb.getpixel((560, yy))
                     for xx in range(600 if yy < 17 else 622, fb.width if yy < 17 else 724): fb.putpixel((xx, yy), c)
                 fb.save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=90)
+        tfile = os.path.join(ROOT, f'tabs_{VER}.json')
+        if NEWV and no == '01' and os.path.exists(tfile):  # 病名タブ（切替）：tabs_vN/t2〜.png＋位置データ
+            tj = json.load(open(tfile)); bx, by, bw, bh = tj['box']
+            os.makedirs(os.path.join(PUB, 'assets', 'p', no), exist_ok=True)
+            b0 = im.crop((round(bx * sc), round(by * sc), round((bx + bw) * sc), round((by + bh) * sc)))
+            b0.save(os.path.join(PUB, 'assets', 'p', no, 'tab1.webp'), quality=88)
+            bg = im.getpixel((round(10 * sc), round((by + 5) * sc)))
+            for k in range(2, len(tj['variants']) + 1):
+                v = Image.open(os.path.join(ROOT, f'tabs_{VER}', f't{k}.png')).convert('RGBA').resize(b0.size)
+                base_im = Image.new('RGBA', b0.size, bg + (255,)); base_im.alpha_composite(v)
+                base_im.convert('RGB').save(os.path.join(PUB, 'assets', 'p', no, f'tab{k}.webp'), quality=88)
+            p['tabsw'] = {'box': tj['box'], 'tabs': tj['tabs'], 'vars': [v['links'] for v in tj['variants']]}
         # スライス（セクション単位）→ アコーディオン位置でさらに分割
         px = lambda x, y: '#%02x%02x%02x' % im.getpixel((min(im.width - 1, round(x * sc)), min(im.height - 1, round(y * sc))))
         def dark(x0, x1, y):
@@ -196,6 +216,10 @@ def build():
                 if best is None or v < best[0]: best = (v, ln)
             buf = io.BytesIO(); best[1].save(buf, 'PNG', optimize=True)
             return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+        def light(b):  # ＋/−の記号色＝枠内でいちばん明るい色（中心が記号から外れていても拾える）
+            x0, y0, w0, h0 = b
+            box = im.crop((round((x0 + w0 * .2) * sc), round((y0 + h0 * .2) * sc), round((x0 + w0 * .8) * sc), round((y0 + h0 * .8) * sc)))
+            return '#%02x%02x%02x' % max(box.getdata(), key=sum)
         slices = []
         for a, b in zip(pts, pts[1:]):
             if hdr and a == hdr[1]: continue
@@ -222,7 +246,7 @@ def build():
             panel = (f'<div class="apw" style="background:url({sec_bg}) 0 0/100% 100% no-repeat"><div class="ap ap-{kind}{" open" if op else ""}" id="{rid}" style="{st}">{inner}'
                      f'<div class="ap-g"><div class="ap-in"><div class="ap-b">{content}</div></div></div></div></div>')
             ops.append({'cut': cut, 'res': res, 'panel': panel, 'id': rid, 'open': op, 'row': row, 'pm': pm, 'kind': kind, 'key': key,
-                        'pmc': px(pm[0] + 3, pm[1] + pm[3] / 2), 'pmg': px(pm[0] + pm[2] / 2, pm[1] + pm[3] / 2)})
+                        'pmc': px(pm[0] + 3, pm[1] + pm[3] / 2), 'pmg': light(pm)})
         ft = next((k for k in ks if k[0].startswith('フッター')), None)
         if ft:
             fy = ft[1]
@@ -279,7 +303,9 @@ def build():
             if not s: continue
             attr = 'href="tel:0362056944"' if k == 'tel' else f'data-act="{k}"'
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], k if k != 'line' else 'line', attr, k))
+        tb_ = p.get('tabsw', {}).get('box')
         for to, x, y, w, h in p['links']:
+            if tb_ and tb_[1] <= y + h / 2 <= tb_[1] + tb_[3] and tb_[0] <= x + w / 2 <= tb_[0] + tb_[2]: continue
             s = find(y + h / 2)
             if not s or to not in URL: continue
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', link_attr(to, base), TITLE[to]))

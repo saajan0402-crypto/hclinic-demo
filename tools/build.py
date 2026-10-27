@@ -19,6 +19,9 @@ for p in pages:
     m = re.match(r'SP｜No\.(\d+) (.+)（([^（）]+)）$', p['name'])
     p['no'], p['title'], url = m.group(1), m.group(2), m.group(3)
     p['url'] = url.replace('{ID}', 'sample')
+MAPS = json.load(open(os.path.join(ROOT, 'maps_v5.json'))) if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'maps_v5.json')) else {}
+for p in pages: p['maps'] = MAPS.get(p['no'], [])
+GMAP = 'https://maps.google.com/maps?q=' + '%E6%9D%B1%E4%BA%AC%E9%83%BD%E6%96%B0%E5%AE%BF%E5%8C%BA%E6%AD%8C%E8%88%9E%E4%BC%8E%E7%94%BA1%E4%B8%81%E7%9B%AE5-4%20%E7%AC%AC22%E6%9D%B1%E3%83%93%E3%83%AB' + '&hl=ja&z=17&output=embed'
 URL = {p['no']: p['url'] for p in pages}
 TITLE = {p['no']: p['title'] for p in pages}
 
@@ -56,6 +59,10 @@ def page_html(p, slices, fixed_rel):
                 imgs = ''.join(f'<img src="{base}assets/p/{no}/hero{k + 1}.webp" alt="" width="{hw * S}" height="{hh * S}" decoding="async"{" class=on" if k == 0 else ""}>' for k in range(p['hero_n']))
                 dots = ''.join(f'<button class="hero-dot" data-i="{k}" aria-label="スライド{k + 1}を表示" style="left:{(d[0] - hx - 4) / hw * 100:.3f}%;top:{(d[1] - hy - 11) / hh * 100:.3f}%;width:{(d[2] + 8) / hw * 100:.3f}%;height:{24 / hh * 100:.3f}%"></button>' for k, d in enumerate(hero['dots']))
                 hs = (f'<div class="hero-sl" aria-roledescription="carousel" style="left:{hx / W * 100:.3f}%;top:{(hy - c["top"]) / c["h"] * 100:.3f}%;width:{hw / W * 100:.3f}%;height:{hh / c["h"] * 100:.3f}%">{imgs}{dots}</div>') + hs
+            for mx, my, mw, mh in p.get('maps', []):
+                if c['top'] <= my < c['top'] + c['h']:
+                    hs = (f'<div class="gmap" style="left:{mx / W * 100:.3f}%;top:{(my - c["top"]) / c["h"] * 100:.3f}%;width:{mw / W * 100:.3f}%;height:{mh / c["h"] * 100:.3f}%">'
+                          f'<iframe src="{GMAP}" title="Googleマップ（エイチクリニック新宿）" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>') + hs
             anc = ''.join(f'<span class="anc" id="{a}" style="top:{(ay - c["top"]) / c["h"] * 100:.3f}%"></span>' for a, ay in c['anc'])
             load = 'eager' if n < 3 else 'lazy'
             parts.append(f'<div class="ch" style="aspect-ratio:{W}/{c["h"]}"><img src="{base}assets/p/{no}/{n:02d}.webp" alt="" width="{W * S}" height="{round(c["h"] * S)}" loading="{load}" decoding="async">{hs}{anc}</div>')
@@ -297,7 +304,7 @@ def build():
             s['hot'].append(hot(x, y, w, h, s['top'], s['h'], 'link', f'href="#{aid}" data-anchor', lab))
         if ft:
             fy = ft[1]
-            for args in ((20, fy + 219, 112, 22, 'tel', 'href="tel:0362056944"', '電話'), (20, fy + 657, 44, 40, 'sns', 'data-act="sns"', 'X'), (74, fy + 657, 105, 40, 'sns', 'data-act="sns"', 'Instagram')):
+            for args in ((20, fy + 219, 112, 22, 'tel', 'href="tel:0362056944"', '電話'), (20, fy + 657, 44, 40, 'link', 'href="https://x.com/h_clinic2222" target="_blank" rel="noopener"', 'X（新しいタブで開きます）'), (74, fy + 657, 105, 40, 'link', 'href="https://www.instagram.com/h_clinic_shinjuku/" target="_blank" rel="noopener"', 'Instagram（新しいタブで開きます）')):
                 x, y, w, h, k, attr, lab = args
                 s_ = find(y + h / 2)
                 if s_: s_['hot'].append(hot(x, y, w, h, s_['top'], s_['h'], k, attr, lab))

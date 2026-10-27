@@ -6,9 +6,11 @@ import accdata
 ROOT = os.path.dirname(os.path.abspath(__file__))
 VER = os.environ.get('HC_VER', 'v4')
 OUT = os.path.join(ROOT, 'site')
-PUB = os.path.join(OUT, 'public', 'v5') if VER == 'v5' else os.path.join(OUT, 'public')
-SRC = os.path.join(ROOT, 'img_src_v5' if VER == 'v5' else 'img_src')
-DATA = 'data_v5' if VER == 'v5' else 'data'
+NEWV = VER in ('v5', 'v6')  # v5以降は /vN/ 以下に出力
+PUB = os.path.join(OUT, 'public', VER) if NEWV else os.path.join(OUT, 'public')
+SRC = os.path.join(ROOT, f'img_src_{VER}' if NEWV else 'img_src')
+DATA = f'data_{VER}' if NEWV else 'data'
+VLABEL = {'v4': 'v4（前回版）', 'v5': 'v5（医療機関トーン版）', 'v6': 'v6（フィードバック反映版）'}
 S = 2  # 書き出し倍率
 W = 375
 
@@ -20,7 +22,7 @@ for p in pages:
     p['no'], p['title'], url = m.group(1), m.group(2), m.group(3)
     p['url'] = url.replace('{ID}', 'sample')
 MAPS = json.load(open(os.path.join(ROOT, 'maps_v5.json'))) if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'maps_v5.json')) else {}
-for p in pages: p['maps'] = MAPS.get(p['no'], [])
+for p in pages: p['maps'] = p.get('maps') if VER == 'v6' else MAPS.get(p['no'], [])  # v6はFigmaの地図枠から抽出
 GMAP = 'https://maps.google.com/maps?q=%E3%82%A8%E3%82%A4%E3%83%81%E3%82%AF%E3%83%AA%E3%83%8B%E3%83%83%E3%82%AF%E6%96%B0%E5%AE%BF%20%E6%AD%8C%E8%88%9E%E4%BC%8E%E7%94%BA&ll=35.6935135,139.7029641&z=17&hl=ja&output=embed'  # Googleの掲載名「エイチクリニック新宿 歌舞伎町」でピン表示
 URL = {p['no']: p['url'] for p in pages}
 TITLE = {p['no']: p['title'] for p in pages}
@@ -73,7 +75,7 @@ def page_html(p, slices, fixed_rel):
     return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>{esc(TITLE[no])}｜エイチクリニック新宿（デモ）</title>
 <link rel="preload" as="image" href="{base}assets/p/{no}/00.webp"><link rel="stylesheet" href="{base}assets/app.css"></head>
-<body{' class="v5"' if VER == "v5" else ""} data-base="{base}"><div class="shell">
+<body{(' class="v5 ' + VER + '"') if NEWV else ""} data-base="{base}"><div class="shell">
 <header class="hdr"><img src="{base}assets/header.webp" alt="エイチクリニック新宿" width="{W * S}" height="{67 * S}">
 <a class="hs hs-link" href="{base}" style="left:2.5%;top:10%;width:39%;height:80%;border-radius:10px" aria-label="TOPへ"></a>
 <a class="hs hs-link" href="{base}en/" style="left:47.4%;top:25%;width:17.8%;height:50%;border-radius:999px" aria-label="English"></a>
@@ -84,9 +86,9 @@ def page_html(p, slices, fixed_rel):
 </div>
 <nav class="menu" aria-hidden="true"><div class="menu-in">
 <button class="menu-close" aria-label="閉じる">×</button>
-<p class="menu-ttl">{'メニュー' if VER == 'v5' else 'MENU'}</p>
+<p class="menu-ttl">{'メニュー' if NEWV else 'MENU'}</p>
 {menu_html(base)}
-<a class="mi mi-ver" href="/choose/">表示中：{'v5（医療機関トーン版）' if VER == 'v5' else 'v4（前回版）'}｜バージョンを切り替える</a>
+<a class="mi mi-ver" href="/choose/">表示中：{VLABEL[VER]}｜バージョンを切り替える</a>
 </div></nav>
 <div class="toast" role="status"></div>
 <script src="{base}assets/app.js" defer></script></body></html>'''
@@ -102,7 +104,7 @@ def menu_html(base):
 FONT = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 CRUMB = {'TOP': '01', '性病検査': '04', '自費診療': '15', '当院について': '23', 'お知らせ': '26'}
 
-LEAD = {} if VER == 'v5' else json.load(open(os.path.join(ROOT, 'data2', 'lead.json')))
+LEAD = {} if NEWV else json.load(open(os.path.join(ROOT, 'data2', 'lead.json')))
 BOLD = ImageFont.truetype(os.path.join(ROOT, 'fonts', 'NotoSansJP.ttf'), 30); BOLD.set_variation_by_axes([700])
 
 def footer_html(base, cur, bg):
@@ -160,12 +162,12 @@ def build():
                 from PIL import ImageDraw
                 mk = Image.new('L', ai.size, 0); ImageDraw.Draw(mk).ellipse((2, 2, 110, 110), fill=255); ai.putalpha(mk)
                 ai.save(os.path.join(PUB, 'assets', 'ai.webp'), quality=90)
-                if VER == 'v5' and os.path.exists(os.path.join(ROOT, 'ai_v5', 'ai.webp')):  # v5は背景透過のボタン画像（固定バーの茶色が写り込まない）
+                if NEWV and os.path.exists(os.path.join(ROOT, 'ai_v5', 'ai.webp')):  # v5は背景透過のボタン画像（固定バーの茶色が写り込まない）
                     shutil.copy(os.path.join(ROOT, 'ai_v5', 'ai.webp'), os.path.join(PUB, 'assets', 'ai.webp'))
             im.paste(im.crop((612 - 260, fy - 88, 740 - 260, fy)), (612, fy - 88))
         # TOPスライド（v5）：hero_v5/s1〜3.png（写真枠＝375×380の2倍書き出し）
-        hdir = os.path.join(ROOT, 'hero_v5')
-        if VER == 'v5' and p.get('hero') and os.path.isdir(hdir):
+        hdir = os.path.join(ROOT, f'hero_{VER}')
+        if NEWV and p.get('hero') and os.path.isdir(hdir):
             os.makedirs(os.path.join(PUB, 'assets', 'p', no), exist_ok=True)
             hs_src = sorted(glob.glob(os.path.join(hdir, 's*.png')))
             for k, fn in enumerate(hs_src):
@@ -318,7 +320,7 @@ def build():
         pd = os.path.join(PUB, p['url'].strip('/')) if p['url'].strip('/') else PUB
         os.makedirs(pd, exist_ok=True)
         doc = page_html(p, slices, fixed_rel)
-        if VER == 'v5': doc = re.sub(r'border-radius:[^;"]+', 'border-radius:2px', doc)
+        if NEWV: doc = re.sub(r'border-radius:[^;"]+', 'border-radius:2px', doc)
         open(os.path.join(pd, 'index.html'), 'w').write(doc)
         report.append(f"{no}: {len(chunks)}枚 リンク{sum(len(c['hot']) for c in chunks)} アコーディオン{len(ops)} 未対応{sum(1 for a, c, _ in accs if not c)}")
     print('\n'.join(report))

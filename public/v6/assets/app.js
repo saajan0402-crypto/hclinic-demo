@@ -99,3 +99,41 @@ ds.forEach(function(d){d.addEventListener('click',function(){norm();go(+d.getAtt
 var sx=null,sy=null;b.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
 b.addEventListener('touchend',function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){norm();go(i+(dx<0?1:-1));}});
 set(false);});
+/* 参考にしたサイト（v6）：SP単品表示は左右の余白にセクション横で、PC・狭い画面は右端のパネルで表示。並べて比較（iframe内）では出さない */
+(function(){var el=document.getElementById('refdata');if(!el||window.self!==window.top)return;
+var R=JSON.parse(el.textContent),pc=document.body.classList.contains('pc'),ms=[].slice.call(document.querySelectorAll('.refm'));
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var card=function(r,i,big){return '<p class="refc-k"><span>参考にしたサイト</span>'+esc(r.label)+'</p>'+r.items.map(function(it,j){return '<figure class="refc-i"><button type="button" class="refc-img" data-r="'+i+'" data-j="'+j+'" aria-label="'+esc(it.site)+'のスクリーンショットを拡大"><img src="'+((pc||big)?it.pc:it.sp)+'" alt="'+esc(it.site)+'のスクリーンショット" loading="lazy"></button><figcaption><b>'+esc(it.site)+'</b><span>'+esc(it.cap)+'</span></figcaption></figure>'}).join('')};
+// 左右の余白（SP単品・広い画面）
+var side=document.createElement('div');side.className='refside';side.setAttribute('aria-label','参考にしたサイト');
+R.forEach(function(r,i){var c=document.createElement('aside');c.className='refc';c.setAttribute('data-r',i);c.innerHTML=card(r,i,false);side.appendChild(c);});
+if(!pc)document.body.appendChild(side);
+// 右端のパネル
+var tab=document.createElement('button');tab.type='button';tab.className='reftab';tab.setAttribute('aria-expanded','false');tab.setAttribute('aria-label','参考にしたサイトを表示');tab.innerHTML='<span>参<br>考<br>サ<br>イ<br>ト</span><b>'+R.length+'</b>';
+var dr=document.createElement('div');dr.className='refdr';dr.setAttribute('role','dialog');dr.setAttribute('aria-label','このページで参考にしたサイト');
+dr.innerHTML='<div class="refdr-h"><p>このページで参考にしたサイト</p><button type="button" class="refdr-x" aria-label="閉じる">×</button></div><p class="refdr-n">実際に公開されている医療機関のサイトを見比べ、見せ方を取り入れています。表示中のセクションの参考が色付きになります。</p><div class="refdr-l">'+R.map(function(r,i){return '<section class="refc refc-d" data-r="'+i+'">'+card(r,i,true)+'<button type="button" class="refc-go" data-r="'+i+'">このセクションへ移動 ↓</button></section>'}).join('')+'</div><p class="refdr-n">※参考サイトの角の丸みは、当院のデザインでは角ありに統一しています。</p>';
+document.body.appendChild(tab);document.body.appendChild(dr);
+var setOpen=function(o){document.body.classList.toggle('ref-open',o);tab.setAttribute('aria-expanded',o?'true':'false');if(o)scrollCur();};
+tab.addEventListener('click',function(){setOpen(!document.body.classList.contains('ref-open'));});
+dr.querySelector('.refdr-x').addEventListener('click',function(){setOpen(false);});
+var docTop=function(e){return e.getBoundingClientRect().top+window.scrollY;};
+dr.addEventListener('click',function(e){var g=e.target.closest('.refc-go');if(!g)return;var m=ms[+g.getAttribute('data-r')];if(m)window.scrollTo({top:docTop(m)-(document.querySelector('.hdr')||{offsetHeight:0}).offsetHeight-10,behavior:'smooth'});});
+// いま見ているセクション
+var cur=-1;function scrollCur(){var c=dr.querySelector('.refc-d.on');if(c&&document.body.classList.contains('ref-open'))dr.querySelector('.refdr-l').scrollTo({top:c.offsetTop-dr.querySelector('.refdr-l').offsetTop-8,behavior:'smooth'});}
+function upd(){var y=window.scrollY+innerHeight*0.45,k=-1;ms.forEach(function(m,i){if(docTop(m)<=y)k=+m.getAttribute('data-r');});if(k===cur)return;cur=k;
+[].forEach.call(document.querySelectorAll('.refc'),function(c){c.classList.toggle('on',+c.getAttribute('data-r')===k);});tab.classList.toggle('has',k>=0);scrollCur();}
+// 余白のカード配置（左右交互・重ならないように詰める）
+function lay(){if(pc)return;var w=innerWidth,cw=Math.min(300,(w-430)/2-56);document.body.classList.toggle('ref-side',cw>=200);if(cw<200)return;
+var bot=[0,0],cs=side.children;for(var i=0;i<cs.length;i++){var c=cs[i],m=ms.filter(function(x){return +x.getAttribute('data-r')===i})[0];if(!m){c.style.display='none';continue;}
+var sd=i%2?1:0;c.style.width=cw+'px';c.style.left=(sd?(w/2+215+28):(w/2-215-28-cw))+'px';var t=Math.max(docTop(m),bot[sd]+20);c.style.top=t+'px';bot[sd]=t+c.offsetHeight;}}
+// 拡大表示
+var lb=document.createElement('div');lb.className='reflb';lb.setAttribute('role','dialog');lb.setAttribute('aria-modal','true');document.body.appendChild(lb);
+document.addEventListener('click',function(e){var b=e.target.closest('.refc-img');if(!b)return;var it=R[+b.getAttribute('data-r')].items[+b.getAttribute('data-j')];
+lb.innerHTML='<div class="reflb-in"><button type="button" class="reflb-x" aria-label="閉じる">×</button><p class="reflb-t"><b>'+esc(it.site)+'</b>'+esc(it.cap)+'</p><div class="reflb-im"><figure><img src="'+it.pc+'" alt=""><figcaption>PC表示</figcaption></figure><figure class="sp"><img src="'+it.sp+'" alt=""><figcaption>スマホ表示</figcaption></figure></div><p class="reflb-f"><a href="'+esc(it.url)+'" target="_blank" rel="noopener">このサイトを開く（新しいタブ）</a><span>※スクリーンショットは2026年10月28日時点。角の丸みは当院のデザインでは角ありに統一しています。</span></p></div>';
+lb.classList.add('on');lb.querySelector('.reflb-x').focus();});
+lb.addEventListener('click',function(e){if(e.target===lb||e.target.closest('.reflb-x'))lb.classList.remove('on');});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){lb.classList.remove('on');setOpen(false);}});
+window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',function(){lay();upd();});
+if(window.ResizeObserver)new ResizeObserver(function(){lay();}).observe(document.querySelector('main')||document.body);
+[].forEach.call(document.querySelectorAll('.refc-img img'),function(im){im.addEventListener('load',lay);});
+lay();upd();})();

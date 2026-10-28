@@ -92,7 +92,7 @@ def page_html(p, slices, fixed_rel):
 <header class="hdr"><img src="{base}assets/header.webp" alt="エイチクリニック新宿" width="{W * S}" height="{HH * S}">
 {''.join(p.get('hdr_hot', [])) if PC else HDR_SP.format(base=base)}</header>
 <main>{''.join(secs)}</main>
-{'<div class="fbar" hidden></div>' if PC else FBAR.format(base=base, w=W * S, h=62 * S, fhs=fhs)}
+{FBAR_PC.format(base=base) if PC else FBAR.format(base=base, w=W * S, h=62 * S, fhs=fhs)}
 </div>
 {devsw(p, base) if VER == 'v6' else ''}
 <nav class="menu" aria-hidden="true"><div class="menu-in">
@@ -109,6 +109,21 @@ HDR_SP = '''<a class="hs hs-link" href="{base}" style="left:2.5%;top:10%;width:3
 <button class="hs hs-web" data-act="web" style="left:65.9%;top:27%;width:17.9%;height:46%;border-radius:999px" aria-label="Web予約"></button>
 <button class="hs hs-menu" style="left:84.7%;top:15%;width:12.9%;height:70%;border-radius:10px" aria-label="メニュー"></button>'''
 FBAR = '<div class="fbar"><img src="{base}assets/fixed.webp" alt="" width="{w}" height="{h}">{fhs}<button class="ai" data-act="ai" aria-label="AIチャット"><img src="{base}assets/ai.webp" alt="" width="112" height="112"></button></div>'
+
+# PC固定バー（Figma「固定バーPC」1440×88。ボタンは x=670/890/1110・幅210・y=15・高さ58）
+_pcb = lambda x: f'left:{x / 14.4:.3f}%;top:{15 / 88 * 100:.3f}%;width:{210 / 14.4:.3f}%;height:{58 / 88 * 100:.3f}%'
+FBAR_PC = ('<div class="fbar"><img src="{base}assets/fixed.webp" alt="" width="2160" height="132">'
+           f'<button class="hs hs-line" data-act="line" style="{_pcb(670)}" aria-label="LINE予約"></button>'
+           f'<button class="hs hs-web" data-act="web" style="{_pcb(890)}" aria-label="Web予約"></button>'
+           f'<a class="hs hs-tel" href="tel:0362056944" style="{_pcb(1110)}" aria-label="電話相談"></a>'
+           '<button class="ai" data-act="ai" aria-label="AIチャット"><img src="{base}assets/ai.webp" alt="" width="112" height="112"></button></div>')
+DD = {'04': ['04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14'], '15': ['15', '16', '17', '18', '19', '20', '21']}  # PCグロナビのドロップダウン
+
+def dd_html(to, x, y, w, h, base):  # ホバーで下層ページの一覧を表示（項目自体はカテゴリTOPへのリンク）
+    items = ''.join(f'<a href="{base}{URL[n].lstrip("/")}"{" class=ddt" if n == to else ""}>{esc(TITLE[n])}{"（一覧）" if n == to else ""}</a>' for n in DD[to])
+    st = f'left:{(x - 14) / W * 100:.3f}%;top:{(y - 12) / HH * 100:.3f}%;width:{(w + 28) / W * 100:.3f}%;height:{(HH - y + 12) / HH * 100:.3f}%'
+    return (f'<div class="dd" style="{st}"><a class="hs hs-link" href="{base}{URL[to].lstrip("/")}" aria-label="{esc(TITLE[to])}" aria-haspopup="true" style="left:0;top:0;width:100%;height:{(h + 24) / (HH - y + 12) * 100:.3f}%"></a>'
+            f'<div class="ddp" role="menu">{items}</div></div>')
 
 def devsw(p, base):  # スマホ版／PC版の切り替えと「並べて比較」
     u = p['url'].lstrip('/')
@@ -203,6 +218,9 @@ def build():
                 if oy < hy + hh and oy + oh > hy:
                     im.crop((round(ox * sc), round(oy * sc), round((ox + ow) * sc), round((oy + oh) * sc))).save(os.path.join(PUB, 'assets', 'p', no, f'box{k}.webp'), quality=88)
                     p['ovl'].append([ox, oy, ow, oh])
+        if PC and no == '01' and os.path.exists(os.path.join(ROOT, 'fixed_v6pc.png')):  # 影の分を除いて 1440×88 を切り出し
+            Image.open(os.path.join(ROOT, 'fixed_v6pc.png')).convert('RGB').crop((30, 39, 2190, 171)).save(os.path.join(PUB, 'assets', 'fixed.webp'), quality=90)
+            shutil.copy(os.path.join(ROOT, 'ai_v5', 'ai.webp'), os.path.join(PUB, 'assets', 'ai.webp'))
         if no == '01':
             im.crop((0, 0, im.width, round(HH * sc))).save(os.path.join(PUB, 'assets', 'header.webp'), quality=88)
             if fx:
@@ -327,7 +345,7 @@ def build():
                 s['hot'].append(f'<a class="hs hs-link hs-bc" href="{base}{URL[to].lstrip("/")}" aria-label="{esc(g)}" style="left:{(x0 - 4) / W * 100:.3f}%;top:{(yy - s["top"]) / s["h"] * 100:.3f}%;width:{(x1 - x0 + 8) / W * 100:.3f}%;height:{hh / s["h"] * 100:.3f}%;border-radius:6px"></a>')
         # 予約CTAの汎用ボタン
         if PC:  # PCのヘッダー（ナビ・予約ボタン）はFigmaの抽出位置から
-            p['hdr_hot'] = [hot(x, y, w, h, 0, HH, 'link', link_attr(to, base), TITLE[to]) for to, x, y, w, h in p['links'] if y + h / 2 < HH and to in URL]
+            p['hdr_hot'] = [dd_html(to, x, y, w, h, base) if (to in DD and y > 80) else hot(x, y, w, h, 0, HH, 'link', link_attr(to, base), TITLE[to]) for to, x, y, w, h in p['links'] if y + h / 2 < HH and to in URL]
             p['hdr_hot'] += [hot(x, y, w, h, 0, HH, k, 'href="tel:0362056944"' if k == 'tel' else f'data-act="{k}"', k) for k, x, y, w, h in p['acts'] if y < HH]
         acts = [a for a in p['acts'] if not (hdr and a[2] < HH)]
         cta = next((k for k in ks if k[0].startswith('予約CT')), None)

@@ -126,7 +126,8 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 /* v6：写真に重なる予約ボックス */
 .ovl{position:absolute;z-index:1;pointer-events:none;display:block;max-width:none}
 /* v6：PC版（1440px基準） */
-.pc .shell{max-width:1440px;padding-bottom:0;container-type:inline-size}
+.pc{--fbh:calc(min(100vw,1440px)*88/1440)}
+.pc .shell{max-width:1440px;padding-bottom:var(--fbh);container-type:inline-size}
 .pc .sl{--u:calc(min(100vw,1440px)/1440);--u:calc(100cqw/1440)}
 .pc .ap-b{font-size:calc(var(--u)*16)}
 .pc .ap-tw table{font-size:calc(var(--u)*15)}
@@ -134,16 +135,27 @@ img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none
 .pc .ap-more{font-size:calc(var(--u)*16);max-width:calc(var(--u)*420);margin-left:auto;margin-right:auto}
 .pc .ap-i .ap-b{padding:calc(var(--u)*22) calc(var(--u)*34) calc(var(--u)*26)}
 .pc .ap-t .ap-b{padding:calc(var(--u)*6) calc(var(--u)*20) calc(var(--u)*24)}
-.pc .totop{right:max(16px,calc(50% - 720px + 20px));bottom:24px;width:48px;height:48px}
-.pc .fbar{display:none}
+.pc .totop{right:max(16px,calc(50% - 720px + 20px));bottom:calc(var(--fbh) + 20px);width:48px;height:48px}
 /* v6：スマホ版／PC版の切り替え */
 .devsw{position:fixed;left:max(12px,calc(50% - 215px + 12px));bottom:calc(76px + env(safe-area-inset-bottom));z-index:36;display:flex;background:rgba(74,51,38,.88);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(74,51,38,.25);font-size:11px;line-height:1;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .devsw a{color:#fff;text-decoration:none;padding:8px 11px;border-radius:999px;white-space:nowrap;font-weight:700;letter-spacing:.03em}
 .devsw a[aria-current]{background:#fff;color:#4a3326}
-.pc .devsw{left:max(12px,calc(50% - 720px + 16px));bottom:24px;font-size:12px;flex-direction:column;border-radius:14px;width:96px}
+.pc .devsw{left:max(12px,calc(50% - 720px + 16px));bottom:calc(var(--fbh) + 20px);font-size:12px;flex-direction:column;border-radius:14px;width:96px}
 .pc .devsw a{padding:9px 0;text-align:center;border-radius:11px}
 .in-frame .devsw{display:none}
 .v5 .devsw,.v5 .devsw a{border-radius:2px}
 .menu:not(.open) .menu-in{box-shadow:none}  /* 閉じたメニューの影が画面右端に出ないように */
 /* v6：角丸は使わない（すべて角あり） */
 .v6 .toast,.v6 .devsw,.v6 .devsw a,.v6 .pc .devsw,.v6 .hs,.v6 .ap,.v6 .ap-i,.v6 .ap-tw,.v6 .ap-more,.v6 .mi,.v6 .menu-close,.v6 .totop,.v6 .gmap,.v6 .gmap iframe,.v6 .pmx::before,.v6 .pmx::after{border-radius:0!important}
+/* v6 PC：下部追従の固定バー（スマホと同じくスクロールで表示） */
+.pc .fbar{max-width:1440px;box-shadow:0 -6px 20px rgba(74,51,38,.12)}
+.pc .ai{left:auto;right:20px;bottom:calc(100% + 88px);width:64px}
+/* v6 PC：グロナビのドロップダウン（性病検査・自費診療） */
+.pc .hdr{--u:calc(100cqw/1440)}
+.dd{position:absolute;z-index:4}
+.ddp{position:absolute;left:0;top:100%;min-width:calc(var(--u)*300);display:grid;grid-template-columns:1fr 1fr;gap:0 calc(var(--u)*24);padding:calc(var(--u)*18) calc(var(--u)*24) calc(var(--u)*20);background:#fff;border-top:3px solid var(--o);box-shadow:0 14px 30px rgba(74,51,38,.16);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .2s,transform .25s var(--ease),visibility 0s .25s}
+.dd:hover .ddp,.dd:focus-within .ddp{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .25s var(--ease)}
+.ddp a{display:block;white-space:nowrap;padding:calc(var(--u)*11) calc(var(--u)*22) calc(var(--u)*11) calc(var(--u)*14);border-bottom:1px solid #EFE4D8;color:var(--ink,#3A2C24);text-decoration:none;font-weight:700;font-size:calc(var(--u)*14);position:relative;transition:color .15s,background-color .15s}
+.ddp a::before{content:"";position:absolute;left:0;top:50%;width:5px;height:5px;border-top:1.5px solid var(--o);border-right:1.5px solid var(--o);transform:translateY(-50%) rotate(45deg)}
+.ddp a:hover{color:var(--o);background:#FFF6EE}
+.ddp a.ddt{grid-column:1/-1;color:var(--o)}

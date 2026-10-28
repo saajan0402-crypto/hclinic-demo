@@ -87,3 +87,15 @@
 /* 病名タブ（v6）：タブで画像とリンクを切り替え */
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.tsw-tab');if(!b)return;var w=b.closest('.tsw'),i=+b.getAttribute('data-i');
 w.querySelectorAll(':scope>img').forEach(function(im,k){im.classList.toggle('on',k===i)});w.querySelectorAll('.tsp').forEach(function(p,k){p.classList.toggle('on',k===i)});});
+/* バナーのスライド（v6）：左右ボタン・ドット・スワイプで1枚ずつ送る（端はループ） */
+document.querySelectorAll('.bnr').forEach(function(b){var tr=b.querySelector('.bnr-tr');if(!tr)return;var ds=b.querySelectorAll('.bnr-dot'),n=+b.getAttribute('data-n'),f=+tr.getAttribute('data-f'),i=0;
+function set(an){tr.style.transition=an?'':'none';tr.style.transform='translateX('+(-i*f*100)+'%)';var a=((i%n)+n)%n;ds.forEach(function(d,k){d.classList.toggle('on',k===a);d.setAttribute('aria-current',k===a?'true':'false');});if(!an)void tr.offsetWidth;}
+function norm(){if(i>=n||i<0){i=((i%n)+n)%n;set(false);}}
+function go(j){norm();i=j;if(i>n)i=n;if(i<-1)i=-1;set(true);}
+tr.addEventListener('transitionend',function(e){if(e.target===tr)norm();});
+b.querySelector('.bnr-prev').addEventListener('click',function(){norm();go(i-1);});
+b.querySelector('.bnr-next').addEventListener('click',function(){norm();go(i+1);});
+ds.forEach(function(d){d.addEventListener('click',function(){norm();go(+d.getAttribute('data-i'));});});
+var sx=null,sy=null;b.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+b.addEventListener('touchend',function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){norm();go(i+(dx<0?1:-1));}});
+set(false);});
